@@ -1,0 +1,133 @@
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap");
+
+body {
+  --tt-toolbar-height: 44px;
+  --tt-theme-text: var(--tt-gray-light-900);
+
+  .dark & {
+    --tt-theme-text: var(--tt-gray-dark-900);
+  }
+}
+
+body {
+  font-family: "Inter", sans-serif;
+  color: var(--tt-theme-text);
+  font-optical-sizing: auto;
+  font-weight: 400;
+  font-style: normal;
+  padding: 0;
+  overscroll-behavior-y: none;
+}
+
+html,
+body {
+  overscroll-behavior-x: none;
+}
+
+html,
+body,
+#root,
+#app {
+  height: 100%;
+  background-color: var(--tt-bg-color);
+}
+
+::-webkit-scrollbar {
+  width: 0.25rem;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--tt-scrollbar-color) transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--tt-scrollbar-color);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.tiptap.ProseMirror {
+  font-family: "DM Sans", sans-serif;
+}
+
+.simple-editor-wrapper {
+  width: 100vw;
+  height: 100vh;
+  overflow: auto;
+}
+
+.simple-editor-content {
+  max-width: 648px;
+  width: 100%;
+  margin: 0 auto;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.simple-editor-content .tiptap.ProseMirror.simple-editor {
+  flex: 1;
+  padding: 3rem 3rem 30vh;
+}
+
+@media screen and (max-width: 480px) {
+  .simple-editor-content .tiptap.ProseMirror.simple-editor {
+    padding: 1rem 1.5rem 30vh;
+  }
+}
+
+/* Form / drawer embed — override full-page demo layout */
+.tiptap-embed {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+}
+
+.tiptap-embed .simple-editor-wrapper {
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
+  min-height: 0;
+  max-height: min(52dvh, 420px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 0.5rem;
+  background: var(--tt-bg-color, var(--color-bg-white-0, #fff));
+}
+
+.tiptap-embed .simple-editor-content {
+  max-width: 100% !important;
+  width: 100% !important;
+  margin: 0 !important;
+  flex: 1;
+  min-height: 11rem;
+  max-height: min(46dvh, 360px);
+  height: auto !important;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.tiptap-embed .simple-editor-content .tiptap.ProseMirror.simple-editor {
+  padding: 0.75rem 0.75rem 1.5rem;
+  min-height: 8rem;
+}
+
+@media screen and (max-width: 767px) {
+  .tiptap-embed .tiptap-toolbar[data-variant="fixed"] {
+    position: relative;
+    top: auto;
+    bottom: auto !important;
+    z-index: 2;
+    flex-shrink: 0;
+    border-top: none;
+    border-bottom: 1px solid var(--tt-toolbar-border-color);
+    height: var(--tt-toolbar-height);
+    padding: 0 0.5rem;
+  }
+}

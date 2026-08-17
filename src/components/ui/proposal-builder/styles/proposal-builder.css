@@ -1,0 +1,131 @@
+@import './proposal-template.css';
+
+/* Builder chrome (preview canvas) */
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.proposal-builder-preview-canvas {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.proposal-pdf-preview-mode {
+  background: #525659;
+}
+
+.proposal-pdf-preview {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.proposal-pdf-preview iframe {
+  border: 0;
+  display: block;
+}
+
+.proposal-pdf-preview > div {
+  width: 100%;
+  height: 100%;
+}
+
+/* Web vs PDF debug compare (preview mode: compare) */
+.proposal-web-pdf-compare {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--color-bg-weak-100, #f6f8fa);
+}
+
+.proposal-web-pdf-compare--empty {
+  align-items: center;
+  justify-content: center;
+}
+
+.proposal-web-pdf-compare__columns {
+  display: grid;
+  flex: 1;
+  min-height: 0;
+  grid-template-columns: 1fr 1fr;
+  overflow: hidden;
+}
+
+.proposal-web-pdf-compare__column {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  border-right: 1px solid var(--color-stroke-soft-200, #e2e8f0);
+}
+
+.proposal-web-pdf-compare__column--pdf {
+  border-right: none;
+}
+
+.proposal-web-pdf-compare__header {
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--color-stroke-soft-200, #e2e8f0);
+  background: var(--color-bg-white-0, #fff);
+}
+
+.proposal-web-pdf-compare__header-title {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-main-900, #0f172a);
+}
+
+.proposal-web-pdf-compare__header-meta {
+  font-size: 11px;
+  color: var(--color-text-soft-400, #94a3b8);
+}
+
+.proposal-web-pdf-compare__viewport {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--color-bg-weak-100, #f6f8fa);
+}
+
+.proposal-web-pdf-compare__viewport--pdf {
+  background: #525659;
+}
+
+.proposal-web-pdf-compare__pdf {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.proposal-web-pdf-compare__pdf iframe {
+  border: 0;
+  display: block;
+}
+
+.proposal-web-pdf-compare__pdf > div {
+  width: 100%;
+  height: 100%;
+}
+
+.proposal-web-pdf-compare .proposal-preview-zoom-bar {
+  flex-shrink: 0;
+}

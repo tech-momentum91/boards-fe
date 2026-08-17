@@ -1,0 +1,69 @@
+/* Board entity tags in comments / TipTap — beat browser <a> defaults */
+
+a.board-entity-tag,
+span.board-entity-tag,
+.ProseMirror a.board-entity-tag,
+.ProseMirror span.board-entity-tag,
+.ProseMirror .node-boardEntityTag,
+.ProseMirror [data-node-view-wrapper].board-entity-tag {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  max-width: 220px !important;
+  margin: 0 2px !important;
+  padding: 2px 8px 2px 6px !important;
+  border-radius: 9999px !important;
+  border: 1px solid var(--color-stroke-soft-200, #e2e4e9) !important;
+  background: var(--color-bg-weak-50, #f5f7fa) !important;
+  color: var(--color-text-sub-500, #525866) !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  line-height: 16px !important;
+  letter-spacing: -0.084px !important;
+  text-decoration: none !important;
+  vertical-align: middle !important;
+  white-space: nowrap !important;
+  cursor: default !important;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+/* Posted comments stay clickable */
+a.board-entity-tag {
+  cursor: pointer !important;
+}
+
+a.board-entity-tag:hover,
+.comment-entity-tags a.board-entity-tag:hover {
+  background: var(--color-bg-weak-100, #ebeef3) !important;
+  border-color: var(--color-stroke-soft-200, #e2e4e9) !important;
+  color: var(--color-text-main-900, #0a0d14) !important;
+  text-decoration: none !important;
+}
+
+a.board-entity-tag:visited,
+a.board-entity-tag:active,
+a.board-entity-tag:focus {
+  color: var(--color-text-sub-500, #525866) !important;
+  text-decoration: none !important;
+  outline: none;
+}
+
+.board-entity-tag__icon {
+  display: inline-flex !important;
+  flex-shrink: 0 !important;
+  width: 12px !important;
+  height: 12px !important;
+  opacity: 0.75;
+}
+
+.board-entity-tag__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: inherit !important;
+  text-decoration: none !important;
+  border: none !important;
+  background: transparent !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
