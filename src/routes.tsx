@@ -1,0 +1,53 @@
+import { lazy, type ReactElement } from 'react';
+import { Navigate, type RouteObject } from 'react-router-dom';
+import ProtectedRoute from '@/route-protection/protected-route';
+import RootRedirect from '@/route-protection/root-redirect';
+
+const Login = lazy(() => import('@/pages/auth/login'));
+const ResetPassword = lazy(() => import('@/pages/auth/reset-password'));
+const CreatePassword = lazy(() => import('@/pages/auth/create-password'));
+const PasswordSuccess = lazy(() => import('@/pages/auth/password-success'));
+const EmailSent = lazy(() => import('@/pages/auth/email-sent'));
+const BoardsPage = lazy(() => import('@/pages/boards'));
+const BoardNoAccessPage = lazy(() => import('@/pages/boards/BoardNoAccessPage'));
+const PublicTaskPage = lazy(() => import('@/pages/public/public-task-page'));
+
+const protectedBoardsRoute = (element: ReactElement) => (
+  <ProtectedRoute>{element}</ProtectedRoute>
+);
+
+const routes: RouteObject[] = [
+  { path: '/', element: <RootRedirect /> },
+  {
+    path: '/login',
+    element: (
+      <ProtectedRoute requireAuth={false}>
+        <Login />
+      </ProtectedRoute>
+    ),
+  },
+  { path: '/reset-password', element: <ResetPassword /> },
+  { path: '/update-password', element: <CreatePassword /> },
+  { path: '/password-success', element: <PasswordSuccess /> },
+  { path: '/email-sent', element: <EmailSent /> },
+  { path: '/public/task/:taskId', element: <PublicTaskPage /> },
+  { path: '/boards', element: protectedBoardsRoute(<BoardsPage />) },
+  { path: '/boards/no-access', element: protectedBoardsRoute(<BoardNoAccessPage />) },
+  {
+    path: '/boards/space/:spaceId/list/:listId',
+    element: protectedBoardsRoute(<BoardsPage />),
+  },
+  {
+    path: '/boards/space/:spaceId/folder/:folderId/list/:listId',
+    element: protectedBoardsRoute(<BoardsPage />),
+  },
+  {
+    path: '/boards/space/:spaceId/folder/:folderId',
+    element: protectedBoardsRoute(<BoardsPage />),
+  },
+  { path: '/boards/space/:spaceId', element: protectedBoardsRoute(<BoardsPage />) },
+  { path: '/boards/list/:listId', element: protectedBoardsRoute(<BoardsPage />) },
+  { path: '*', element: <Navigate to='/' replace /> },
+];
+
+export default routes;
