@@ -24,7 +24,7 @@ export const INTERNAL_HOST_SUFFIXES = Object.freeze([
 /** Base domain that may be linked as a white-label VMS client domain. */
 export const MOMENTUM91_BASE_DOMAIN = 'momentum91.com';
 
-const LOCAL_DEV_HOSTS = Object.freeze(['localhost', '127.0.0.1']);
+const LOCAL_DEV_HOSTS = Object.freeze(['localhost', '127.0.0.1', 'boards.local']);
 
 export function normalizeHostname(hostname) {
   return String(hostname ?? '')

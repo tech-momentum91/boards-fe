@@ -6,10 +6,10 @@ import svgr from 'vite-plugin-svgr'
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
-  const apiUrl = env.VITE_API_URL ?? 'http://localhost:8000'
+  const apiUrl = env.VITE_API_URL ?? 'http://boards.local:4000'
   const socketTarget =
     env.VITE_SOCKET_URL ??
-    `http://localhost:${env.VITE_SOCKET_PORT ?? '9000'}`
+    `http://boards.local:${env.VITE_SOCKET_PORT ?? '9000'}`
 
   return {
     plugins: [react(), tailwindcss(), svgr()],
@@ -23,6 +23,7 @@ export default defineConfig(({ mode }) => {
       port: 5164,
       strictPort: true,
       host: true,
+      allowedHosts: ['localhost', 'boards.local'],
       proxy: {
         '/api': { target: apiUrl, changeOrigin: true, secure: false },
         '/files': { target: apiUrl, changeOrigin: true, secure: false },

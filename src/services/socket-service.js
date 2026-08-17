@@ -36,19 +36,19 @@ export class SocketService {
    */
   getSocketUrl() {
     const socketPort = import.meta.env.VITE_SOCKET_PORT || '9000';
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8001';
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://boards.local:4000';
     const backendUrl = new URL(apiUrl);
 
     // Get site name from env var (required) or fallback to hostname
     const siteName = import.meta.env.VITE_SITE_NAME || window.site_name || backendUrl.hostname;
 
     // Local dev: connect through the Vite dev server so origin and host match.
-    // Frappe's socket auth rejects cross-origin connections (e.g. :5173 → :9000).
+    // Frappe's socket auth rejects cross-origin connections (e.g. :5164 → :9000).
     if (import.meta.env.DEV) {
       const origin =
         typeof window !== 'undefined'
           ? window.location.origin
-          : `http://${backendUrl.hostname}:5173`;
+          : `http://${backendUrl.hostname}:5164`;
       return `${origin}/${siteName}`;
     }
 
@@ -99,7 +99,7 @@ export class SocketService {
     }
 
     const siteName = window.site_name || import.meta.env.VITE_SITE_NAME || window.location.hostname;
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8001';
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://boards.local:4000';
 
     // console.log('Connecting to socket:', socketUrl);
     // console.log('Site name:', siteName);
