@@ -20,7 +20,7 @@ import LoginCardHeader from '@/components/login-card-header';
 import AuthLayout from '@/components/auth-layout';
 import { useAuth } from '@/contexts/auth-context';
 import { loginService, getUserByEmailID } from '@/services/auth-service';
-import { loginSuccess, setError, clearError, getUserSidebarPerm } from '@/redux/authSlice';
+import { loginSuccess, setError, clearError } from '@/redux/authSlice';
 import { getProfile } from '@/redux/profileSlice';
 import { showErrorToast } from '@/utils/error-utils';
 import { SESSION_EXPIRED_TOAST_KEY } from '@/utils/auth-utils';
@@ -106,10 +106,6 @@ function Login() {
         authLogin(userData?.data || userData, data.email);
         // Update Redux store
         dispatch(loginSuccess(userData?.data || userData));
-
-        // Fetch user sidebar permissions after successful login
-        const loginResponse = await dispatch(getUserSidebarPerm());
-        // console.log('loginResponse in login', loginResponse);
       }
     } catch {
       // console.log('error in login', error);

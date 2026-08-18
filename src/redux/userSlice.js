@@ -1,13 +1,58 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import apiClient from '@/api/axios';
 
-// Search users for assignee selection restricted by the current user's center access
+const SEARCH_USERS_ENDPOINT = '/method/devx_tasks.devx_tasks.apis.user_.search_users';
+const MENTION_USERS_ENDPOINT = '/method/devx_tasks.devx_tasks.apis.user_.get_users_for_tagging';
+
+function formatUserOption(user) {
+  const primaryRole =
+    user.user_role || (Array.isArray(user.roles) && user.roles.length > 0 ? user.roles[0] : null);
+
+  return {
+    label: user.full_name || user.name || user.email || 'User',
+    value: user.name || user.email,
+    email: user.email,
+    name: user.name,
+    full_name: user.full_name,
+    image: user.user_image,
+    avatar: user.user_image,
+    user_role: primaryRole,
+    roles: user.roles || (primaryRole ? [primaryRole] : []),
+  };
+}
+
+function unwrapSearchUsersMessage(message) {
+  if (Array.isArray(message)) {
+    return {
+      users: message,
+      hasMore: false,
+      start: 0,
+      limit: message.length,
+    };
+  }
+
+  if (message && typeof message === 'object') {
+    const users = Array.isArray(message.results) ? message.results : [];
+    return {
+      users,
+      hasMore: Boolean(message.has_more),
+      start: Number(message.start) || 0,
+      limit: Number(message.limit) || users.length,
+    };
+  }
+
+  return { users: [], hasMore: false, start: 0, limit: 0 };
+}
+
+// Search users for assignee / invite selection on the boards site.
 export const searchUsers = createAsyncThunk(
   'user/searchUsers',
   async (
     {
       searchQuery,
-      limit = 50,
+      limit = 20,
+      start = 0,
+      append = false,
       includeAssignedUsers = [],
       names = [],
       updateSearchData = true,
@@ -16,10 +61,10 @@ export const searchUsers = createAsyncThunk(
     { rejectWithValue },
   ) => {
     try {
-      // Use custom DevX API that restricts users to the centers the current user can access
       const payload = {
         search_query: searchQuery || '',
         limit,
+        start,
       };
 
       // If names are provided, pass them directly to the API
@@ -31,25 +76,9 @@ export const searchUsers = createAsyncThunk(
         payload.internal_only = true;
       }
 
-      const response = await apiClient.post(
-        '/method/devx.api.core.search_users_by_center',
-        payload,
-      );
-
-      const users = response?.data?.message || [];
-
-      // Format users for the frontend
-      const formattedUsers = users.map((user) => ({
-        label: user.full_name || user.name || user.email || 'User',
-        value: user.name || user.email,
-        email: user.email,
-        name: user.name,
-        full_name: user.full_name,
-        image: user.user_image,
-        avatar: user.user_image,
-        user_role: user.user_role || null,
-        roles: user.roles || (user.user_role ? [user.user_role] : []), // Support both formats
-      }));
+      const response = await apiClient.post(SEARCH_USERS_ENDPOINT, payload);
+      const unwrapped = unwrapSearchUsersMessage(response?.data?.message);
+      const formattedUsers = unwrapped.users.map(formatUserOption);
 
       // If we have assigned users that aren't in search results, add them
       if (includeAssignedUsers && includeAssignedUsers.length > 0) {
@@ -68,35 +97,24 @@ export const searchUsers = createAsyncThunk(
           );
         });
 
-        // If there are missing assigned users, fetch them (still restricted by center access)
+        // If there are missing assigned users, fetch them
         if (missingValues.length > 0) {
           const assignedPayload = {
             names: missingValues,
             limit: missingValues.length,
+            start: 0,
           };
           if (internalOnly) {
             assignedPayload.internal_only = true;
           }
-          const assignedResponse = await apiClient.post(
-            '/method/devx.api.core.search_users_by_center',
-            assignedPayload,
-          );
+          const assignedResponse = await apiClient.post(SEARCH_USERS_ENDPOINT, assignedPayload);
+          const assignedUnwrapped = unwrapSearchUsersMessage(assignedResponse?.data?.message);
 
-          const assignedUsers = assignedResponse?.data?.message || [];
-          assignedUsers.forEach((user) => {
-            const userValue = user.name || user.email;
+          assignedUnwrapped.users.forEach((user) => {
+            const formatted = formatUserOption(user);
+            const userValue = formatted.value;
             if (!existingValues.has(userValue)) {
-              formattedUsers.push({
-                label: user.full_name || user.name || user.email || 'User',
-                value: user.name || user.email,
-                email: user.email,
-                name: user.name,
-                full_name: user.full_name,
-                image: user.user_image,
-                avatar: user.user_image,
-                user_role: user.user_role || null,
-                roles: user.roles || (user.user_role ? [user.user_role] : []), // Support both formats
-              });
+              formattedUsers.push(formatted);
               existingValues.add(userValue);
             }
           });
@@ -106,6 +124,10 @@ export const searchUsers = createAsyncThunk(
       return {
         searchQuery: searchQuery || '',
         users: formattedUsers,
+        hasMore: unwrapped.hasMore,
+        start: unwrapped.start,
+        limit: unwrapped.limit || limit,
+        append: Boolean(append),
         updateSearchData, // Pass flag to reducer
       };
     } catch (error) {
@@ -120,7 +142,7 @@ export const searchMentionUsers = createAsyncThunk(
   async ({ keyword = '', page = 1, page_size = 50 } = {}, { rejectWithValue }) => {
     try {
       const payload = keyword ? { keyword, page, page_size } : { page, page_size };
-      const response = await apiClient.post('/method/devx.api.user.get_users_for_tagging', payload);
+      const response = await apiClient.post(MENTION_USERS_ENDPOINT, payload);
 
       let data;
       if (response?.data?.message?.results) {
@@ -136,17 +158,7 @@ export const searchMentionUsers = createAsyncThunk(
       const hasMore =
         data.page && data.total_pages ? data.page < data.total_pages : data.has_more || false;
 
-      const formattedUsers = users.map((user) => ({
-        label: user.full_name || user.name || user.email || 'User',
-        value: user.name || user.email,
-        email: user.email,
-        name: user.name,
-        full_name: user.full_name,
-        image: user.user_image,
-        avatar: user.user_image,
-        user_role: user.user_role || null,
-        roles: user.roles || (user.user_role ? [user.user_role] : []),
-      }));
+      const formattedUsers = users.map((user) => formatUserOption(user));
 
       return {
         keyword,
@@ -185,6 +197,9 @@ const initialState = {
     status: 'idle',
     error: null,
     lastSearchQuery: '',
+    hasMore: false,
+    nextStart: 0,
+    isLoadingMore: false,
   },
   userNameMap: {}, // Map of { [email/name]: "Full Name" }
 };
@@ -199,17 +214,42 @@ const userSlice = createSlice({
         if (action.meta.arg?.updateSearchData === false) {
           return;
         }
+        if (action.meta.arg?.append) {
+          state.userSearch.isLoadingMore = true;
+          return;
+        }
         state.userSearch.status = 'loading';
         state.userSearch.error = null;
+        state.userSearch.isLoadingMore = false;
       })
       .addCase(searchUsers.fulfilled, (state, action) => {
         state.userSearch.status = 'succeeded';
+        state.userSearch.isLoadingMore = false;
 
         // Only update userSearch.data if updateSearchData is true
         // This prevents assignees fetch from overwriting the people list
         if (action.payload.updateSearchData !== false) {
-          state.userSearch.data = action.payload.users || [];
+          const incoming = action.payload.users || [];
+          if (action.payload.append) {
+            const existing = new Set(
+              state.userSearch.data.map((user) => user.value || user.name),
+            );
+            const merged = [...state.userSearch.data];
+            incoming.forEach((user) => {
+              const key = user.value || user.name;
+              if (!existing.has(key)) {
+                merged.push(user);
+                existing.add(key);
+              }
+            });
+            state.userSearch.data = merged;
+          } else {
+            state.userSearch.data = incoming;
+          }
           state.userSearch.lastSearchQuery = action.payload.searchQuery || '';
+          state.userSearch.hasMore = Boolean(action.payload.hasMore);
+          state.userSearch.nextStart =
+            (Number(action.payload.start) || 0) + (incoming.length || 0);
         }
 
         // Always update userNameMap with all users from the response
@@ -230,6 +270,7 @@ const userSlice = createSlice({
       })
       .addCase(searchUsers.rejected, (state, action) => {
         state.userSearch.status = 'failed';
+        state.userSearch.isLoadingMore = false;
         state.userSearch.error = action.payload || action.error.message;
       })
       .addCase(searchMentionUsers.fulfilled, (state, action) => {

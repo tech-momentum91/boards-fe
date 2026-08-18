@@ -1,5 +1,4 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import apiClient from '@/api/axios';
 import axios from 'axios';
 
 const initialState = {
@@ -13,14 +12,6 @@ const initialState = {
     isLoading: false,
     status: null,
     error: null,
-  },
-
-  userSideBarPerm: {
-    isLoading: false,
-    error: null,
-    status: null,
-    data: null,
-    role: null,
   },
 };
 
@@ -105,20 +96,6 @@ export const createPasswordThunk = createAsyncThunk(
   },
 );
 
-export const getUserSidebarPerm = createAsyncThunk(
-  'auth/getUserSidebarPerm',
-  async (_, { rejectWithValue }) => {
-    try {
-      const response = await apiClient.get(
-        '/method/devx.api.user.get_user_doc_sidebar_permissions',
-      );
-      return response.data;
-    } catch (error) {
-      return rejectWithValue(error.response);
-    }
-  },
-);
-
 const authSlice = createSlice({
   name: 'auth',
   initialState,
@@ -150,12 +127,6 @@ const authSlice = createSlice({
       state.userInfo = null;
       state.error = null;
       state.isLoading = false;
-      state.userSideBarPerm = {
-        isLoading: false,
-        error: null,
-        status: null,
-        data: null,
-      };
     },
   },
 
@@ -227,26 +198,6 @@ const authSlice = createSlice({
       state.isLoading = false;
       state.error = action.error.message;
       state.status = 'error';
-    });
-
-    builder.addCase(getUserSidebarPerm.pending, (state) => {
-      state.userSideBarPerm.isLoading = true;
-      state.userSideBarPerm.error = null;
-      state.userSideBarPerm.status = null;
-    });
-
-    builder.addCase(getUserSidebarPerm.fulfilled, (state, action) => {
-      state.userSideBarPerm.isLoading = false;
-      state.userSideBarPerm.error = null;
-      state.userSideBarPerm.status = 'success';
-      state.userSideBarPerm.data = action.payload;
-      state.userSideBarPerm.role = action.payload?.message?.role;
-    });
-
-    builder.addCase(getUserSidebarPerm.rejected, (state, action) => {
-      state.userSideBarPerm.isLoading = false;
-      state.userSideBarPerm.error = action.payload?.response?.statusText;
-      state.userSideBarPerm.status = action.payload?.response?.status;
     });
   },
 });

@@ -1602,7 +1602,7 @@ export const getRolesWithDescription = createAsyncThunk(
   '/settings/getRolesWithDescription',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await apiClient.post('/method/devx.api.user.get_roles', {});
+      const response = await apiClient.post('/method/devx_tasks.devx_tasks.apis.user_.get_roles', {});
       return response.data;
     } catch (error) {
       return rejectWithValue(error?.serialized ?? error?.response?.data ?? error?.message);

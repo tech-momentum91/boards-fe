@@ -658,11 +658,22 @@
   --color-social-zendesk: oklch(100% 0 0);
 } */
 
+:root {
+  --ui-scale: 0.9;
+}
+
 html {
   background: white;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   font-smooth: never;
+  font-size: calc(100% * var(--ui-scale));
+}
+
+html,
+body,
+#root {
+  height: 100%;
 }
 
 /* Keyframe Animations - AlignUI System */
@@ -736,172 +747,171 @@ body {
 /* title */
 .title-h1 {
   font-family: Figtree;
-  font-size: 56px;
+  font-size: 3.5rem;
   font-style: normal;
   font-weight: 500;
-  line-height: 64px; /* 114.286% */
-  letter-spacing: -0.56px;
+  line-height: 4rem;
+  letter-spacing: -0.01em;
 }
 
 .title-h2 {
   font-family: Figtree;
-  font-size: 48px;
+  font-size: 3rem;
   font-style: normal;
   font-weight: 500;
-  line-height: 56px; /* 116.667% */
-  letter-spacing: -0.48px;
+  line-height: 3.5rem;
+  letter-spacing: -0.01em;
 }
 
 .title-h3 {
   font-family: Figtree;
-  font-size: 40px;
+  font-size: 2.5rem;
   font-style: normal;
   font-weight: 500;
-  line-height: 48px; /* 120% */
-  letter-spacing: -0.4px;
+  line-height: 3rem;
+  letter-spacing: -0.01em;
 }
 
 .title-h4 {
   font-family: Figtree;
-  font-size: 32px;
+  font-size: 2rem;
   font-style: normal;
   font-weight: 500;
-  line-height: 40px; /* 125% */
+  line-height: 2.5rem;
 }
 
 .title-h5 {
   font-family: Figtree;
-  font-size: 24px;
+  font-size: 1.5rem;
   font-style: normal;
   font-weight: 500;
-  line-height: 32px; /* 133.333% */
-  letter-spacing: -0.36px;
+  line-height: 2rem;
+  letter-spacing: -0.015em;
 }
 
 /* paragraphs */
 
 .paragraph-xlarge {
   font-family: Figtree;
-  font-size: 24px;
+  font-size: 1.5rem;
   font-style: normal;
   font-weight: 400;
-  line-height: 32px; /* 133.333% */
-  letter-spacing: -0.36px;
+  line-height: 2rem;
+  letter-spacing: -0.015em;
 }
 
 .paragraph-large {
   font-family: Figtree;
-  font-size: 18px;
+  font-size: 1.125rem;
   font-style: normal;
   font-weight: 400;
-  line-height: 24px; /* 133.333% */
-  letter-spacing: -0.27px;
+  line-height: 1.5rem;
+  letter-spacing: -0.015em;
 }
 
 .paragraph-medium {
   font-family: Figtree;
-  font-size: 16px;
+  font-size: 1rem;
   font-style: normal;
   font-weight: 400;
-  line-height: 24px; /* 150% */
-  letter-spacing: -0.176px;
+  line-height: 1.5rem;
+  letter-spacing: -0.011em;
 }
 
 .paragraph-small {
   font-family: Figtree;
-  font-size: 14px;
+  font-size: 0.875rem;
   font-style: normal;
   font-weight: 400;
-  line-height: 20px; /* 142.857% */
-  letter-spacing: -0.084px;
+  line-height: 1.25rem;
+  letter-spacing: -0.006em;
 }
 
 .paragraph-xsmall {
   font-family: Figtree;
-  font-size: 12px;
+  font-size: 0.75rem;
   font-style: normal;
   font-weight: 400;
-  line-height: 16px; /* 133.333% */
+  line-height: 1rem;
 }
 
 /* label */
 
 .label-large {
   font-family: Figtree;
-  font-size: 18px;
+  font-size: 1.125rem;
   font-style: normal;
   font-weight: 500;
-  line-height: 24px; /* 133.333% */
-  letter-spacing: -0.27px;
+  line-height: 1.5rem;
+  letter-spacing: -0.015em;
 }
 
 .label-medium {
   font-family: Figtree;
-  font-size: 16px;
+  font-size: 1rem;
   font-style: normal;
   font-weight: 500;
-  line-height: 24px; /* 150% */
-  letter-spacing: -0.176px;
+  line-height: 1.5rem;
+  letter-spacing: -0.011em;
 }
 
 .label-small {
   font-family: Figtree;
-  font-size: 14px;
+  font-size: 0.875rem;
   font-style: normal;
   font-weight: 500;
-  line-height: 20px; /* 142.857% */
-  letter-spacing: -0.084px;
+  line-height: 1.25rem;
+  letter-spacing: -0.006em;
 }
 
 .label-xsmall {
   font-family: Figtree;
-  font-size: 12px;
+  font-size: 0.75rem;
   font-style: normal;
   font-weight: 500;
-  line-height: 16px; /* 142.857% */
-  letter-spacing: 0.84px;
-  /* text-transform: uppercase; */
+  line-height: 1rem;
+  letter-spacing: 0.07em;
 }
 
 /*subheading */
 
 .subheading-medium {
   font-family: Figtree;
-  font-size: 16px;
+  font-size: 1rem;
   font-style: normal;
   font-weight: 500;
-  line-height: 24px; /* 150% */
-  letter-spacing: 0.96px;
+  line-height: 1.5rem;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
 .subheading-small {
   font-family: Figtree;
-  font-size: 14px;
+  font-size: 0.875rem;
   font-style: normal;
   font-weight: 500;
-  line-height: 20px; /* 142.857% */
-  letter-spacing: 0.84px;
+  line-height: 1.25rem;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
 .subheading-xsmall {
   font-family: Figtree;
-  font-size: 14px;
+  font-size: 0.875rem;
   font-style: normal;
   font-weight: 500;
-  line-height: 20px; /* 142.857% */
-  letter-spacing: 0.84px;
+  line-height: 1.25rem;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
 .subheading-2xs {
   font-family: Figtree;
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-style: normal;
   font-weight: 500;
-  line-height: 12px; /* 109.091% */
-  letter-spacing: 0.22px;
+  line-height: 0.75rem;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
 }
 

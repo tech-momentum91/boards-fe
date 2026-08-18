@@ -10,7 +10,7 @@ import {
 import { useDispatch } from 'react-redux';
 import { getUserByEmailID, getSession } from '../services/auth-service';
 import { clearAuthData } from '../utils/auth-utils';
-import { getUserSidebarPerm, logoutSuccess } from '../redux/authSlice';
+import { logoutSuccess } from '../redux/authSlice';
 import { getProfile } from '../redux/profileSlice';
 import { socketService } from '../services/socket-service';
 import { clearCsrfToken, fetchCsrfToken } from '../services/csrf-service';
@@ -143,8 +143,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     clearCsrfToken();
     // Disconnect socket on logout
     socketService.disconnect();
-    // Clear sidebar permissions from localStorage on logout
-    localStorage.removeItem('user_perm_sidebar');
     // Dispatch logoutSuccess to reset entire Redux state
     dispatch(logoutSuccess());
     // remove all related to column-config-*
@@ -187,12 +185,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           const userData = await getUserByEmailID(session.message);
           if (userData && !userData.error) {
             persistUser(userData);
-            // Fetch sidebar permissions after user data is fetched
-            try {
-              await dispatch(getUserSidebarPerm());
-            } catch (error) {
-              console.error('Failed to fetch sidebar permissions:', error);
-            }
             // Fetch user profile after user data is fetched
             try {
               await dispatch(getProfile(session.message as never));

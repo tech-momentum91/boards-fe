@@ -4,6 +4,7 @@ import { isClosedStatusCategory } from '@/pages/boards/utils/task-statuses-utils
 import { extractErrorMessage, getFrappeResponseError } from '@/utils/error-utils';
 
 const GET_LIST_TASKS_ENDPOINT = '/method/devx_tasks.devx_tasks.apis.task_.get_list';
+const GET_LIST_GROUPS_ENDPOINT = '/method/devx_tasks.devx_tasks.apis.task_.get_groups';
 const SEARCH_TASKS_ENDPOINT = '/method/devx_tasks.devx_tasks.apis.task_.search';
 const GET_TASK_ENDPOINT = '/method/devx_tasks.devx_tasks.apis.task_.get';
 const CREATE_TASK_ENDPOINT = '/method/devx_tasks.devx_tasks.apis.task_.create';
@@ -567,7 +568,7 @@ export async function createBoardTask({
   }
 }
 
-export async function moveBoardTask({ taskId, listId } = {}) {
+export async function moveBoardTask({ taskId, listId, status } = {}) {
   if (!taskId) {
     return { error: 'Task is required.' };
   }
@@ -580,6 +581,7 @@ export async function moveBoardTask({ taskId, listId } = {}) {
     const response = await apiClient.post(MOVE_TASK_ENDPOINT, {
       task_id: taskId,
       list_id: listId,
+      status,
     });
 
     const result = response.data;
@@ -626,7 +628,7 @@ export async function reorderTasks(taskIds = []) {
   }
 }
 
-export async function duplicateBoardTask({ taskId, listId } = {}) {
+export async function duplicateBoardTask({ taskId, listId, status } = {}) {
   if (!taskId) {
     return { error: 'Task is required.' };
   }
@@ -639,6 +641,7 @@ export async function duplicateBoardTask({ taskId, listId } = {}) {
     const response = await apiClient.post(DUPLICATE_TASK_ENDPOINT, {
       task_id: taskId,
       list_id: listId,
+      status,
     });
 
     const result = response.data;
@@ -811,19 +814,44 @@ export async function searchBoardTasks(query, limit = 50) {
   }
 }
 
-export async function getListTasks(listId, { page = 1, pageSize = 50 } = {}) {
+export async function getListTasks(listId, {
+  page = 1,
+  pageSize = 50,
+  groupBy = null,
+  groupValue = null,
+  search = '',
+  assignedTo = '',
+  closedOnly = null,
+} = {}) {
   if (!listId) {
     return { error: 'List is required.' };
   }
 
   try {
-    const response = await apiClient.get(GET_LIST_TASKS_ENDPOINT, {
-      params: {
-        list_id: listId,
-        page,
-        page_size: pageSize,
-      },
-    });
+    const params = {
+      list_id: listId,
+      page,
+      page_size: pageSize,
+    };
+
+    if (groupBy) {
+      params.group_by = groupBy;
+      params.group_value = groupValue === '__empty__' ? '' : (groupValue ?? '');
+    }
+
+    if (search) {
+      params.search = search;
+    }
+
+    if (assignedTo) {
+      params.assigned_to = assignedTo;
+    }
+
+    if (closedOnly !== null && closedOnly !== undefined) {
+      params.closed_only = closedOnly ? 1 : 0;
+    }
+
+    const response = await apiClient.get(GET_LIST_TASKS_ENDPOINT, { params });
 
     const result = response.data;
     const responseError = getFrappeResponseError(result, 'Failed to load tasks.');
@@ -860,6 +888,62 @@ export async function getListTasks(listId, { page = 1, pageSize = 50 } = {}) {
   } catch (error) {
     return {
       error: extractErrorMessage(error.serialized || error, 'Failed to load tasks.'),
+    };
+  }
+}
+
+export async function getListGroups(listId, {
+  groupBy,
+  search = '',
+  assignedTo = '',
+  closedOnly = null,
+} = {}) {
+  if (!listId) {
+    return { error: 'List is required.' };
+  }
+
+  if (!groupBy) {
+    return { error: 'Group field is required.' };
+  }
+
+  try {
+    const params = {
+      list_id: listId,
+      group_by: groupBy,
+    };
+
+    if (search) {
+      params.search = search;
+    }
+
+    if (assignedTo) {
+      params.assigned_to = assignedTo;
+    }
+
+    if (closedOnly !== null && closedOnly !== undefined) {
+      params.closed_only = closedOnly ? 1 : 0;
+    }
+
+    const response = await apiClient.get(GET_LIST_GROUPS_ENDPOINT, { params });
+    const result = response.data;
+    const responseError = getFrappeResponseError(result, 'Failed to load groups.');
+
+    if (responseError) {
+      return { error: responseError };
+    }
+
+    const message = result?.message ?? {};
+    const groups = Array.isArray(message?.groups) ? message.groups : [];
+
+    return {
+      data: groups.map((group) => ({
+        key: group.key || '__empty__',
+        count: Number(group.count) || 0,
+      })),
+    };
+  } catch (error) {
+    return {
+      error: extractErrorMessage(error.serialized || error, 'Failed to load groups.'),
     };
   }
 }

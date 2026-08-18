@@ -9,6 +9,7 @@ const CreatePassword = lazy(() => import('@/pages/auth/create-password'));
 const PasswordSuccess = lazy(() => import('@/pages/auth/password-success'));
 const EmailSent = lazy(() => import('@/pages/auth/email-sent'));
 const BoardsPage = lazy(() => import('@/pages/boards'));
+const BoardsProfilePage = lazy(() => import('@/pages/profile/BoardsProfilePage'));
 const BoardNoAccessPage = lazy(() => import('@/pages/boards/BoardNoAccessPage'));
 const PublicTaskPage = lazy(() => import('@/pages/public/public-task-page'));
 
@@ -32,6 +33,7 @@ const routes: RouteObject[] = [
   { path: '/email-sent', element: <EmailSent /> },
   { path: '/public/task/:taskId', element: <PublicTaskPage /> },
   { path: '/boards', element: protectedBoardsRoute(<BoardsPage />) },
+  { path: '/boards/profile', element: protectedBoardsRoute(<BoardsProfilePage />) },
   { path: '/boards/no-access', element: protectedBoardsRoute(<BoardNoAccessPage />) },
   {
     path: '/boards/space/:spaceId/list/:listId',

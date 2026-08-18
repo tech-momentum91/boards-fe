@@ -17,6 +17,42 @@ export const shouldFetchScopedTaskTags = ({
 };
 
 /**
+ * Split free-text tag input on commas into trimmed, non-empty labels.
+ * Used when the user presses Enter after typing values like `new, task`.
+ */
+export function parseCommaSeparatedTags(value) {
+  return String(value ?? '')
+    .split(',')
+    .map((tag) => tag.trim())
+    .filter(Boolean);
+}
+
+/**
+ * Append tags case-insensitively without duplicates.
+ */
+export function appendUniqueTags(existing = [], incoming = []) {
+  const next = Array.isArray(existing) ? [...existing] : [];
+  const seen = new Set(next.map((tag) => String(tag).toLowerCase()));
+
+  for (const raw of incoming) {
+    const tag = String(raw ?? '').trim();
+    if (!tag) {
+      continue;
+    }
+
+    const key = tag.toLowerCase();
+    if (seen.has(key)) {
+      continue;
+    }
+
+    seen.add(key);
+    next.push(tag);
+  }
+
+  return next;
+}
+
+/**
  * Get priority badge color variant
  */
 export const getPriorityVariant = (priority) => {
