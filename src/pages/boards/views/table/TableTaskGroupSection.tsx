@@ -5,7 +5,7 @@ import { GroupLabelBadge } from '../list/components/ListTaskGroupSection';
 export default function TableTaskGroupSection({
   group,
   groupColumn,
-  columns = [],
+  columns: _columns = [],
   collapsed = false,
   onToggleCollapsed,
   tableGridStyle,

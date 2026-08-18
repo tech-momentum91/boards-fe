@@ -1,4 +1,4 @@
-import { useContext, useEffect, useCallback, useRef } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/auth-context';
 
 /**

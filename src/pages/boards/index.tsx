@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import Sidebar from './sidebar/Sidebar';
 import BoardHeader from './layout/BoardHeader';
 import BoardsSidebarShell from './layout/BoardsSidebarShell';
 import BoardsGlobalSearchModal from './layout/BoardsGlobalSearchModal';
 import BoardViewTabs from './layout/BoardViewTabs';
-import BoardTaskView from './views/shared/BoardTaskView';
+const BoardTaskView = lazy(() => import('./views/shared/BoardTaskView'));
 import BoardContentPlaceholder, {
   BoardListContentSkeleton,
 } from './layout/BoardContentPlaceholder';
@@ -299,17 +299,19 @@ export default function BoardsPage() {
 
   const listViewContent = isListSelected ? (
     viewsReady && displayActiveView ? (
-      <BoardTaskView
-        key={selectedItem.id}
-        list={selectedItem}
-        taskView={displayActiveView}
-        layoutMode={taskViewLayoutMode}
-        sidebarTree={sidebarTree}
-        onFavoriteTasksChange={handleFavoriteTasksChange}
-        onViewSettingsPersisted={handleViewSettingsPersisted}
-        onSaveViewAsNew={handleSaveViewAsNew}
-        statusTemplateVersion={statusTemplateVersion}
-      />
+      <Suspense fallback={<BoardListContentSkeleton />}>
+        <BoardTaskView
+          key={selectedItem.id}
+          list={selectedItem}
+          taskView={displayActiveView}
+          layoutMode={taskViewLayoutMode}
+          sidebarTree={sidebarTree}
+          onFavoriteTasksChange={handleFavoriteTasksChange}
+          onViewSettingsPersisted={handleViewSettingsPersisted}
+          onSaveViewAsNew={handleSaveViewAsNew}
+          statusTemplateVersion={statusTemplateVersion}
+        />
+      </Suspense>
     ) : isLoadingViews ? (
       <BoardListContentSkeleton />
     ) : (

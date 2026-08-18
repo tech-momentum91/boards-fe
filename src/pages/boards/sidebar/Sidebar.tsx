@@ -32,7 +32,6 @@ import * as CompactButton from '@/components/ui/compact-button';
 import CircularProgress from '@/components/ui/circular-progress';
 import {
   collectExpandableIds,
-  findNodeById,
   getSidebarTree,
   getNextBoardSortOrder,
   applySidebarTreeSorting,

@@ -3,13 +3,10 @@ import {
   addDays,
   addMonths,
   addWeeks,
-  endOfWeek,
   getHours,
   getMinutes,
-  isSameMonth,
   startOfDay,
   startOfMonth,
-  startOfWeek,
 } from 'date-fns';
 import { resolveBadgeColor } from '@/components/ui/circular-progress';
 import { findBoardStatusOption } from '@/pages/boards/utils/task-statuses-utils';

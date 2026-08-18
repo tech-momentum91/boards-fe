@@ -99,7 +99,6 @@ export class SocketService {
     }
 
     const siteName = window.site_name || import.meta.env.VITE_SITE_NAME || window.location.hostname;
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://boards.local:4000';
 
     // console.log('Connecting to socket:', socketUrl);
     // console.log('Site name:', siteName);
@@ -201,13 +200,13 @@ export class SocketService {
       }
     });
 
-    this.socket.on('reconnect', (attemptNumber) => {
+    this.socket.on('reconnect', (_attemptNumber) => {
       // console.log('Socket reconnected after', attemptNumber, 'attempts');
       this.isConnected = true;
       this.reconnectAttempts = 0;
     });
 
-    this.socket.on('reconnect_attempt', (attemptNumber) => {
+    this.socket.on('reconnect_attempt', (_attemptNumber) => {
       // console.log('Socket reconnection attempt', attemptNumber);
     });
 
@@ -416,7 +415,7 @@ export class SocketService {
     if (!doctype) return;
 
     // Find all subscriptions for this doctype (any event type)
-    this.subscriptions.forEach((subscription, key) => {
+    this.subscriptions.forEach((subscription, _key) => {
       if (subscription.doctype === doctype && subscription.callback) {
         // Call callback with the list_update data
         // The data might contain docname or full doc data

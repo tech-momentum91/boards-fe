@@ -116,8 +116,6 @@ const CommentsTimeline = ({
 
     timelineItems.forEach((item, index) => {
       if (item.type === 'history') {
-        if (currentHistoryGroup.length === 0) {
-        }
         currentHistoryGroup.push({ item, index });
       } else {
         // If we have a pending history group, render it first

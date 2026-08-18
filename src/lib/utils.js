@@ -23,7 +23,6 @@ export const getInitials = (name) => {
 };
 
 import { resolveApiOrigin } from '@/api/api-origin';
-const DEFAULT_API_ORIGIN = import.meta.env?.VITE_API_URL ?? '';
 
 /**
  * Builds a browser-usable URL for Frappe file paths (e.g. `/files/...`).

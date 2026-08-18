@@ -194,12 +194,10 @@ const transformSpaceListData = (backendData) => {
     const totalSeats = getNumberValue(item.total_seats);
 
     // Use available_seats directly from API, or fallback to totalSeats if not provided
-    let availableSeats = 0;
-    if (item.available_seats !== undefined && item.available_seats !== null) {
-      availableSeats = getNumberValue(item.available_seats);
-    } else {
-      availableSeats = totalSeats; // Fallback to totalSeats if not in API
-    }
+    const availableSeats =
+      item.available_seats !== undefined && item.available_seats !== null
+        ? getNumberValue(item.available_seats)
+        : totalSeats;
 
     // Normalize bookable field (allow null)
     const bookableVal = item.bookable;
@@ -506,7 +504,7 @@ export const fetchSpaceListData = createAsyncThunk(
 
       // Ensure we have valid data before transforming
       if (!Array.isArray(rawData)) {
-        // eslint-disable-next-line no-console
+         
         console.warn('fetchSpaceListData: Invalid response data format', {
           responseData,
           rawData,
@@ -850,7 +848,7 @@ export const getSpaceListSortingThunk = createAsyncThunk(
 
       // Ensure we have valid data before transforming
       if (!Array.isArray(rawData)) {
-        // eslint-disable-next-line no-console
+         
         console.warn('getSpaceListSortingThunk: Invalid response data format', {
           responseData,
           rawData,

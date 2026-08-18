@@ -227,24 +227,6 @@ function columnSortEqual(left = [], right = []) {
   );
 }
 
-function formatDueDate(value) {
-  if (!value) {
-    return '—';
-  }
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return date.toLocaleDateString(undefined, {
-    day: '2-digit',
-    month: '2-digit',
-    year: '2-digit',
-  });
-}
-
 function getUserAssigneeMatchers(user) {
   const matchers = new Set();
 
@@ -655,7 +637,7 @@ function InlineTaskCreateRow({
         titleInputRef.current?.focus();
       });
     } finally {
-      // eslint-disable-next-line require-atomic-updates -- release inline-create lock after async API call
+       
       isCreatingRef.current = false;
       setIsCreating(false);
     }
@@ -2292,7 +2274,6 @@ export default function BoardTaskView({
   const canCreateTasks = canPerformBoardAction(listPermissions, 'create');
   const canEditTasks = canPerformBoardAction(listPermissions, 'edit');
   const canDeleteTasks = canPerformBoardAction(listPermissions, 'delete');
-  const canCommentOnTasks = canPerformBoardAction(listPermissions, 'comment');
   const canSaveViewForAll = useMemo(() => {
     const spaceId = list?.spaceId;
     if (!spaceId) {
@@ -5012,7 +4993,7 @@ export default function BoardTaskView({
         }
         // Run sequentially to avoid DB deadlocks when several tasks touch the
         // same child tables (e.g. assignees) within concurrent transactions.
-        // eslint-disable-next-line no-await-in-loop
+         
         const result = await updateBoardTask({ taskId, data });
         if (result.error) {
           firstError = firstError ?? result.error;
@@ -5138,7 +5119,7 @@ export default function BoardTaskView({
       const failedIds = [];
       for (const taskId of ids) {
         const resolvedStatus = statusByTaskId?.[taskId] ?? status;
-        // eslint-disable-next-line no-await-in-loop
+         
         const result = await moveBoardTask({
           taskId,
           listId: targetListId,
@@ -5178,7 +5159,7 @@ export default function BoardTaskView({
       const failedIds = [];
       for (const taskId of ids) {
         const resolvedStatus = statusByTaskId?.[taskId] ?? status;
-        // eslint-disable-next-line no-await-in-loop
+         
         const result = await duplicateBoardTask({
           taskId,
           listId: targetListId,
@@ -5214,7 +5195,7 @@ export default function BoardTaskView({
 
     let firstError = null;
     for (const taskId of ids) {
-      // eslint-disable-next-line no-await-in-loop
+       
       const result = await duplicateBoardTask({ taskId, listId: list.id });
       firstError = firstError ?? result.error;
     }
@@ -5259,7 +5240,7 @@ export default function BoardTaskView({
 
     let firstError = null;
     for (const taskId of ids) {
-      // eslint-disable-next-line no-await-in-loop
+       
       const result = await duplicateBoardTask({ taskId, listId: list.id });
       firstError = firstError ?? result.error;
     }
@@ -5324,7 +5305,7 @@ export default function BoardTaskView({
     const archivedIds = new Set();
     const failedIds = [];
     for (const taskId of ids) {
-      // eslint-disable-next-line no-await-in-loop
+       
       const result = await archiveBoardTask({ taskId });
       firstError = firstError ?? result.error;
       if (result.error) {
@@ -5368,7 +5349,7 @@ export default function BoardTaskView({
     const deletedIds = new Set();
     const failedIds = [];
     for (const taskId of ids) {
-      // eslint-disable-next-line no-await-in-loop
+       
       const result = await deleteBoardTask({ taskId });
       if (result.error) {
         firstError = firstError ?? result.error;

@@ -9,7 +9,6 @@ import { searchUsers, selectUserSearch } from '@/redux/userSlice';
 import { useDebounce } from '@/hooks/use-debounce';
 import * as Button from '@/components/ui/button';
 import * as Tooltip from '@/components/ui/tooltip';
-import { upperFirst } from 'lodash';
 import { getAssigneeDisplayName, getAssigneeFirstNameInitial } from '@/utils/task-utils';
 
 // Cache for user data to preserve names and images

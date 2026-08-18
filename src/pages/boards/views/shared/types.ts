@@ -116,7 +116,9 @@ export interface CachedViewSettings {
 }
 
 export interface BoardStatusOption {
+  id?: string;
   value?: string;
+  name?: string;
   label?: string;
   color?: string;
   category?: string;
@@ -148,14 +150,6 @@ export interface BoardTask {
   creation?: string | null;
   createdAt?: string | null;
   created_at?: string | null;
-  [key: string]: unknown;
-}
-
-export interface BoardStatusOption {
-  id?: string;
-  name?: string;
-  label?: string;
-  color?: string;
   [key: string]: unknown;
 }
 

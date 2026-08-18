@@ -1,7 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import apiClient from '@/api/axios';
 import { normalizeUserListRow } from '@/utils/user-utils';
-import { fetchAllocatedSpaceListview } from './spaceSlice';
 
 const initialState = {
   profile_all_users: {
@@ -132,7 +131,7 @@ const initialState = {
   },
 };
 
-function resolveUserListHasMore(msg, pageParam, pageSizeParam, results) {
+function _resolveUserListHasMore(msg, pageParam, pageSizeParam, results) {
   const m = msg || {};
   if (typeof m.has_more === 'boolean') return m.has_more;
   if (typeof m.hasMore === 'boolean') return m.hasMore;
@@ -716,7 +715,7 @@ const profileSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    builder.addCase(getProfile.pending, (state, action) => {
+    builder.addCase(getProfile.pending, (state, _action) => {
       state.profileData.isLoading = true;
       state.profileData.error = null;
     });
@@ -737,7 +736,7 @@ const profileSlice = createSlice({
       state.profileData.error = action.payload || action.error.message;
     });
 
-    builder.addCase(saveProfile.pending, (state, action) => {
+    builder.addCase(saveProfile.pending, (state, _action) => {
       state.profileData.isLoading = true;
       state.profileData.error = null;
     });
@@ -759,7 +758,7 @@ const profileSlice = createSlice({
       state.profileData.error = action.payload || action.error.message;
     });
 
-    builder.addCase(resetPasswordProfile.pending, (state, action) => {
+    builder.addCase(resetPasswordProfile.pending, (state, _action) => {
       state.changePasswordData.isLoading = true;
       state.changePasswordData.error = null;
     });

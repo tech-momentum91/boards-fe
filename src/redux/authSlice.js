@@ -169,7 +169,7 @@ const authSlice = createSlice({
       state.emailSent.error = null;
     });
 
-    builder.addCase(resetPasswordMail.fulfilled, (state, action) => {
+    builder.addCase(resetPasswordMail.fulfilled, (state, _action) => {
       // console.log('action in fulfilled', action);
       state.emailSent.isLoading = false;
       state.emailSent.error = null;
@@ -188,7 +188,7 @@ const authSlice = createSlice({
       state.error = null;
     });
 
-    builder.addCase(createPasswordThunk.fulfilled, (state, action) => {
+    builder.addCase(createPasswordThunk.fulfilled, (state, _action) => {
       state.isLoading = false;
       state.error = null;
       state.status = 'success';

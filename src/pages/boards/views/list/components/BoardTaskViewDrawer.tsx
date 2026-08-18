@@ -559,7 +559,7 @@ export default function BoardTaskViewDrawer({
         return;
       }
 
-      let payload = {};
+      let payload;
 
       switch (fieldName) {
         case 'title':

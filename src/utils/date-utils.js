@@ -862,7 +862,7 @@ export const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
 export const visitDateTimeRawToDate = (raw) => {
   if (!raw) return null;
   const s = String(raw).trim();
-  let d = null;
+  let d;
   if (s.includes('T')) {
     d = parseISO(s);
   } else if (s.includes(' ')) {
@@ -1035,7 +1035,7 @@ export const getNextWeekDate = (currentDate) => {
   if (!date) return '';
 
   const dayOfMonth = getDate(date);
-  let nextDay = dayOfMonth;
+  let nextDay;
   let nextMonth = getMonth(date);
   let nextYear = getYear(date);
 
@@ -1075,7 +1075,7 @@ export const getPreviousWeekDate = (currentDate) => {
   if (!date) return '';
 
   const dayOfMonth = getDate(date);
-  let prevDay = dayOfMonth;
+  let prevDay;
   let prevMonth = getMonth(date);
   let prevYear = getYear(date);
 

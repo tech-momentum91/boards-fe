@@ -333,7 +333,7 @@ export async function saveTaskStatusTemplate(item, template, statusesPayload) {
   return callStatusTemplateMethod('save_for_scope', params, 'Failed to save task statuses.');
 }
 
-function buildBulkSavePayloadFromApiTemplate(apiTemplate) {
+function _buildBulkSavePayloadFromApiTemplate(apiTemplate) {
   const statuses = [];
 
   if (Array.isArray(apiTemplate?.statuses)) {

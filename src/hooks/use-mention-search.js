@@ -10,7 +10,6 @@ export const useMentionSearch = ({ debounceMs = 300, page_size = 50 } = {}) => {
   const hasMoreRef = useRef(false);
   const loadingMoreRef = useRef(false);
   const [allUsers, setAllUsers] = useState([]);
-  const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [currentQuery, setCurrentQuery] = useState('');
@@ -38,10 +37,9 @@ export const useMentionSearch = ({ debounceMs = 300, page_size = 50 } = {}) => {
         }),
       );
       if (searchMentionUsers.fulfilled.match(result)) {
-        // eslint-disable-next-line require-atomic-updates -- syncing ref after await; not React state
+         
         currentPageRef.current = result.payload.page;
         setAllUsers((prev) => [...prev, ...result.payload.users]);
-        setCurrentPage(result.payload.page);
         setHasMore(result.payload.hasMore);
       }
     } finally {
@@ -75,10 +73,9 @@ export const useMentionSearch = ({ debounceMs = 300, page_size = 50 } = {}) => {
                 return;
               }
               if (searchMentionUsers.fulfilled.match(result)) {
-                // eslint-disable-next-line require-atomic-updates -- syncing ref after await; not React state
+                 
                 currentPageRef.current = result.payload.page;
                 setAllUsers(result.payload.users || []);
-                setCurrentPage(result.payload.page);
                 setHasMore(result.payload.hasMore);
                 resolve(result.payload.users || []);
                 return;

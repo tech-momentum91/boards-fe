@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -19,7 +19,7 @@ import * as Hint from '@/components/ui/hint';
 import LoginCardHeader from '@/components/login-card-header';
 import AuthLayout from '@/components/auth-layout';
 import { useAuth } from '@/contexts/auth-context';
-import { loginService, getUserByEmailID } from '@/services/auth-service';
+import { loginService } from '@/services/auth-service';
 import { loginSuccess, setError, clearError } from '@/redux/authSlice';
 import { getProfile } from '@/redux/profileSlice';
 import { showErrorToast } from '@/utils/error-utils';
@@ -35,9 +35,6 @@ const loginSchema = z.object({
     }, 'Please enter a valid email address.'),
   password: z.string().min(1, 'Password is required'),
 });
-
-const UNAUTHORIZED_STATUS = 401;
-const FORBIDDEN_STATUS = 403;
 
 function Login() {
   const dispatch = useDispatch();

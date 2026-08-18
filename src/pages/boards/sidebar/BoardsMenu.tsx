@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { RiAddLine, RiLayoutGridLine, RiArchiveLine, RiEyeLine } from 'react-icons/ri';
+import { RiAddLine, RiArchiveLine, RiEyeLine } from 'react-icons/ri';
 import useAnchoredMenuPosition from '../hooks/useAnchoredMenuPosition';
 
 const Toggle = ({ checked, onChange }) => (
