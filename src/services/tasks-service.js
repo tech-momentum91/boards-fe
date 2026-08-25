@@ -1104,9 +1104,7 @@ export async function uploadTaskAttachment({ taskId, file, createRecord = true }
     formData.append('task_id', taskId);
     formData.append('create_record', createRecord ? '1' : '0');
 
-    const response = await apiClient.post(UPLOAD_ATTACHMENT_ENDPOINT, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    const response = await apiClient.post(UPLOAD_ATTACHMENT_ENDPOINT, formData);
 
     const result = response.data;
     const responseError = getFrappeResponseError(result, 'Failed to upload attachment.');

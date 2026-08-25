@@ -13,9 +13,10 @@
  *   className    – string
  */
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { cn } from '@/utils/cn';
+import { showErrorToast } from '@/utils/error-utils';
 import BoardAttachmentCard from './BoardAttachmentCard';
 import BoardAttachmentPreview from './BoardAttachmentPreview';
 import BoardAttachmentUploader from './BoardAttachmentUploader';
@@ -55,12 +56,37 @@ export default function BoardAttachmentList({
 
   const [previewTarget, setPreviewTarget] = useState<BoardAttachment | null>(null);
   const [deleteErrors, setDeleteErrors] = useState<Record<string, string>>({});
+  const toastedErrorsRef = useRef(new Set<string>());
+
+  useEffect(() => {
+    for (const entry of uploadQueue) {
+      if (entry.status !== 'error' || !entry.error) {
+        continue;
+      }
+      if (toastedErrorsRef.current.has(entry.tempId)) {
+        continue;
+      }
+      toastedErrorsRef.current.add(entry.tempId);
+      showErrorToast(entry.error, {
+        defaultMessage: `Failed to upload '${entry.file?.name ?? 'file'}'.`,
+      });
+    }
+  }, [uploadQueue]);
+
+  const handleFilesSelected = async (files: File[]) => {
+    try {
+      await upload(files);
+    } catch (error) {
+      showErrorToast(error, { defaultMessage: 'Failed to upload attachment.' });
+    }
+  };
 
   const handleDelete = async (id: string) => {
     const result = await remove(id);
     if (result.error != null) {
       const error = result.error;
       setDeleteErrors((prev) => ({ ...prev, [id]: error }));
+      showErrorToast(error);
     } else {
       setDeleteErrors((prev) => {
         const next = { ...prev };
@@ -75,7 +101,7 @@ export default function BoardAttachmentList({
   return (
     <div className={cn('flex flex-col gap-3', className)}>
       {showUploader && canUpload ? (
-        <BoardAttachmentUploader onFilesSelected={upload} disabled={isLoading} />
+        <BoardAttachmentUploader onFilesSelected={handleFilesSelected} />
       ) : null}
 
       {listError ? <p className='text-paragraph-xs text-error-base'>{listError}</p> : null}
