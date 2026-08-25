@@ -28,6 +28,17 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+/**
+ * `crypto.randomUUID()` is only available in secure contexts (HTTPS / localhost).
+ * Local boards runs on http://boards.local — fall back so uploads still queue.
+ */
+function createTempId() {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return `upload-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
 export type AttachmentPreviewType =
   | 'image'
   | 'video'
@@ -176,7 +187,7 @@ export function useBoardAttachments(
 
       const generation = generationRef.current;
       const entries: UploadEntry[] = fileList.map((file) => ({
-        tempId: crypto.randomUUID(),
+        tempId: createTempId(),
         file,
         status: 'uploading' as const,
         progress: 0,

@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   RiAddLine,
   RiArrowDownSFill,
   RiFolderLine,
+  RiInbox2Line,
   RiLayoutGridLine,
   RiListCheck3,
   RiMoreFill,
@@ -15,6 +16,7 @@ import {
   RiDraggable,
 } from 'react-icons/ri';
 import { useAuth } from '@/contexts/auth-context';
+import logo from '@/assets/svgs/Layer.svg';
 import { logoutSuccess } from '@/redux/authSlice';
 import { logOutService } from '@/services/auth-service';
 import SidebarUserProfile from './SidebarUserProfile';
@@ -687,6 +689,7 @@ const Sidebar = ({
   sourceTreeRef.current = boardItems;
 
   const navigate = useNavigate();
+  const location = useLocation();
   const dispatch = useDispatch();
   const { user: authUser, logout: authLogout } = useAuth();
   const { profileData } = useSelector((state) => state.profile);
@@ -1309,7 +1312,25 @@ const Sidebar = ({
 
   return (
     <aside className='flex h-full min-h-0 w-[15rem] shrink-0 flex-col border-r border-stroke-soft-200 bg-bg-weak-100'>
+      <div className='flex shrink-0 items-center border-b border-stroke-soft-200 px-5 py-4'>
+        <Link to='/boards' className='flex min-w-0 items-center' aria-label='DevX Boards home'>
+          <img src={logo} alt='DevX' className='h-[26px] w-auto' width={87} height={26} />
+        </Link>
+      </div>
       <div className='flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-5 pb-4 pt-5'>
+        <Link
+          to='/boards/inbox'
+          className={cn(
+            'flex w-full items-center gap-2 rounded-lg px-1.5 py-1.5 text-left transition duration-200 ease-out',
+            location.pathname === '/boards/inbox'
+              ? 'bg-bg-white-0 text-text-sub-500 shadow-regular-sm'
+              : 'text-text-sub-500 hover:bg-bg-weak-50',
+          )}
+        >
+          <RiInbox2Line size={20} className='shrink-0' />
+          <span className='truncate text-label-sm'>Inbox</span>
+        </Link>
+
         <section className='flex w-full flex-col gap-1.5'>
           <SectionHeader
             showActions
