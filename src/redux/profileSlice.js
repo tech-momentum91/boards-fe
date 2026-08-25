@@ -235,7 +235,7 @@ export const resetPasswordProfile = createAsyncThunk(
     try {
       // Use relative path since apiClient already has baseURL with /api
       const response = await apiClient.post(
-        '/method/devx.overrides.user.check_and_update_password',
+        '/method/devx_tasks.devx_tasks.apis.user_.check_and_update_password',
         {
           old_password: data.currentPassword,
           new_password: data.newPassword,
