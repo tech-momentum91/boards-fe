@@ -1323,7 +1323,10 @@ const Sidebar = ({
           to='/inbox'
           className={cn(
             'flex w-full items-center gap-2 rounded-lg px-1.5 py-1.5 text-left transition duration-200 ease-out',
-            location.pathname === '/inbox' || location.pathname === '/boards/inbox'
+            location.pathname === '/inbox'
+              || location.pathname.startsWith('/inbox/')
+              || location.pathname === '/boards/inbox'
+              || location.pathname.startsWith('/boards/inbox/')
               ? 'bg-bg-white-0 text-text-sub-500 shadow-regular-sm'
               : 'text-text-sub-500 hover:bg-bg-weak-50',
           )}

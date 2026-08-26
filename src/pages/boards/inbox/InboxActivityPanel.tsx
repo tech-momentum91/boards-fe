@@ -1,31 +1,27 @@
 import type { ReactNode } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useSelector } from 'react-redux';
 import {
-  RiAlarmLine,
-  RiArchiveLine,
   RiArrowDownSLine,
   RiArrowGoBackLine,
   RiArrowLeftSLine,
   RiArrowUpSLine,
-  RiBookmarkLine,
   RiCheckLine,
-  RiEmotionHappyLine,
-  RiExpandDiagonalLine,
   RiLayoutRightLine,
   RiLoader4Line,
-  RiMoreLine,
   RiNotificationOffLine,
-  RiReplyLine,
-  RiShareForwardLine,
-  RiSparklingLine,
-  RiThumbUpLine,
-  RiUserAddLine,
+  RiTimeLine,
 } from 'react-icons/ri';
 import { format, isToday, isYesterday } from 'date-fns';
 import * as Avatar from '@/components/ui/avatar';
 import { cn } from '@/utils/cn';
 import { parseToDate } from '@/utils/date-utils';
+import { showErrorToast } from '@/utils/error-utils';
+import { useMentionSearch } from '@/hooks/use-mention-search';
 import { getTaskInboxNotifications, markInboxRead } from '@/services/inbox-service';
+import { addBoardTaskComment, toggleBoardTaskCommentReaction, uploadBoardCommentAttachment } from '@/services/tasks-service';
+import BoardCommentComposer from '@/pages/boards/comments/BoardCommentComposer';
+import CommentReactionsBar from '@/pages/boards/components/comment-reactions-bar';
 import {
   ActivityContent,
   CommentBody,
@@ -33,9 +29,11 @@ import {
   TaskStatusGlyph,
   buildInboxBreadcrumb,
   isCommentNotification,
+  resolveInboxCommentId,
   resolveTaskStatusSnap,
   type InboxNotification,
 } from './inbox-activity-shared';
+import InboxSnoozePopover from './InboxSnoozePopover';
 
 type InboxActivityPanelProps = {
   taskId: string;
@@ -48,9 +46,20 @@ type InboxActivityPanelProps = {
   onClose?: () => void;
   onClear: (names: string[]) => void | Promise<void>;
   onUnclear: (names: string[]) => void | Promise<void>;
+  onSnooze: (snoozedUntil: string, names: string[]) => void | Promise<void>;
+  onMute: (taskId: string) => Promise<{ error?: string } | void>;
   onOpenTask: (notification: InboxNotification) => void;
   onMarkedRead?: (names: string[]) => void;
+  sidebarTree?: unknown[];
 };
+
+function htmlToPlainText(html?: string | null) {
+  const value = String(html || '').trim();
+  if (!value) return '';
+  const template = document.createElement('div');
+  template.innerHTML = value;
+  return (template.textContent || template.innerText || '').replace(/\s+/g, ' ').trim();
+}
 
 const AVATAR_COLORS = ['yellow', 'blue', 'sky', 'purple', 'red', 'gray'] as const;
 
@@ -114,28 +123,34 @@ function IconGhostButton({
 function CommentActivityCard({
   notification,
   highlighted,
-  onOpenTask,
+  isReplying = false,
+  onReply,
+  onToggleReaction,
 }: {
   notification: InboxNotification;
   highlighted?: boolean;
-  onOpenTask: (notification: InboxNotification) => void;
+  isReplying?: boolean;
+  onReply?: () => void;
+  onToggleReaction?: (commentId: string, emoji: string) => Promise<void> | void;
 }) {
   const actor = notification.actor_name || notification.actor || 'Someone';
   const initials = useMemo(() => getInitials(actor), [actor]);
   const avatarColor = useMemo(() => avatarColorFor(actor), [actor]);
+  const commentId = resolveInboxCommentId(notification);
+  const canReact = Boolean(commentId && onToggleReaction);
 
   return (
     <div
       className={cn(
-        'group relative overflow-hidden rounded-[10px] border border-[#e4e6eb] bg-bg-white-0',
+        'relative rounded-[10px] border border-[#e4e6eb] bg-bg-white-0',
         highlighted && 'ring-0',
       )}
     >
       {highlighted ? (
-        <span className='absolute inset-y-0 left-0 w-[3px] bg-primary-base' aria-hidden />
+        <span className='absolute inset-y-0 left-0 w-[3px] rounded-l-[10px] bg-primary-base' aria-hidden />
       ) : null}
 
-      <div className='flex items-center gap-2.5 px-4 pt-3.5'>
+      <div className='flex items-center gap-2.5 px-4 pt-3.5 pb-0.5'>
         {notification.actor_image ? (
           <Avatar.Root size='32' className='shrink-0'>
             <Avatar.Image src={notification.actor_image} alt={actor} />
@@ -152,49 +167,35 @@ function CommentActivityCard({
             {formatActivityTimestamp(notification.creation)}
           </span>
         </div>
-
-        <div className='flex shrink-0 items-center text-[#9aa1ab] opacity-0 transition group-hover:opacity-100'>
-          <IconGhostButton title='AI'>
-            <RiSparklingLine size={15} className='text-[#7c6af2]' />
-          </IconGhostButton>
-          <IconGhostButton title='Bookmark'>
-            <RiBookmarkLine size={15} />
-          </IconGhostButton>
-          <IconGhostButton title='Share'>
-            <RiShareForwardLine size={15} />
-          </IconGhostButton>
-          <IconGhostButton title='Assign'>
-            <RiUserAddLine size={15} />
-          </IconGhostButton>
-          <IconGhostButton title='Reply' onClick={() => onOpenTask(notification)}>
-            <RiReplyLine size={15} />
-          </IconGhostButton>
-          <IconGhostButton title='More'>
-            <RiMoreLine size={15} />
-          </IconGhostButton>
-        </div>
       </div>
 
-      <div className='px-4 pb-3 pt-1.5 pl-[3.35rem] text-[14px] leading-[1.45] text-[#292d34]'>
+      <div className='px-4 pb-3.5 pt-2.5 pl-[3.35rem] text-[14px] leading-5 text-[#292d34]'>
         <CommentBody text={notification.message} multiline mentionClassName='text-primary-base' />
       </div>
 
-      <div className='flex items-center justify-between border-t border-[#eef0f3] px-3 py-1'>
-        <div className='flex items-center'>
-          <IconGhostButton title='Like'>
-            <RiThumbUpLine size={16} />
-          </IconGhostButton>
-          <IconGhostButton title='Add reaction'>
-            <RiEmotionHappyLine size={16} />
-          </IconGhostButton>
-        </div>
-        <button
-          type='button'
-          className='rounded-md px-2 py-1 text-[13px] font-medium text-[#7c828d] transition hover:bg-[#eef0f3] hover:text-[#292d34]'
-          onClick={() => onOpenTask(notification)}
-        >
-          Reply
-        </button>
+      <div className='flex items-center justify-between gap-2 border-t border-[#eef0f3] px-4 py-2 pl-[3.35rem]'>
+        <CommentReactionsBar
+          className='mt-0 border-t-0 pt-0'
+          reactions={notification.reactions ?? []}
+          onToggleReaction={
+            canReact ? (emoji) => onToggleReaction?.(commentId, emoji) : undefined
+          }
+          readOnly={!canReact}
+        />
+        {onReply ? (
+          <button
+            type='button'
+            className={cn(
+              'shrink-0 rounded-md px-2 py-1 text-[13px] font-medium transition',
+              isReplying
+                ? 'bg-[#eef0f3] text-[#292d34]'
+                : 'text-[#7c828d] hover:bg-[#eef0f3] hover:text-[#292d34]',
+            )}
+            onClick={onReply}
+          >
+            Reply
+          </button>
+        ) : null}
       </div>
     </div>
   );
@@ -203,18 +204,24 @@ function CommentActivityCard({
 function ActivityFeedItem({
   notification,
   highlighted,
-  onOpenTask,
+  isReplying,
+  onReply,
+  onToggleReaction,
 }: {
   notification: InboxNotification;
   highlighted?: boolean;
-  onOpenTask: (notification: InboxNotification) => void;
+  isReplying?: boolean;
+  onReply?: () => void;
+  onToggleReaction?: (commentId: string, emoji: string) => Promise<void> | void;
 }) {
   if (isCommentNotification(notification)) {
     return (
       <CommentActivityCard
         notification={notification}
         highlighted={highlighted}
-        onOpenTask={onOpenTask}
+        isReplying={isReplying}
+        onReply={onReply}
+        onToggleReaction={onToggleReaction}
       />
     );
   }
@@ -245,21 +252,38 @@ export default function InboxActivityPanel({
   onClose,
   onClear,
   onUnclear,
+  onSnooze,
+  onMute,
   onOpenTask,
   onMarkedRead,
+  sidebarTree = [],
 }: InboxActivityPanelProps) {
+  const { profileData } = useSelector((state) => state.profile);
+  const { searchMentions } = useMentionSearch();
   const [items, setItems] = useState<InboxNotification[]>(
     seedNotification ? [seedNotification] : [],
   );
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [snoozeOpen, setSnoozeOpen] = useState(false);
+  const [muted, setMuted] = useState(false);
+  const [replyingToName, setReplyingToName] = useState<string | null>(null);
+  const [isSubmittingReply, setIsSubmittingReply] = useState(false);
   const requestIdRef = useRef(0);
+  const isSubmittingReplyRef = useRef(false);
+  const composerRef = useRef<{ focus?: () => void } | null>(null);
 
   const headerNotification = items[0] || seedNotification;
   const title = headerNotification?.task_title || headerNotification?.title || 'Task activity';
   const crumbs = buildInboxBreadcrumb(headerNotification);
-  const names = useMemo(() => items.map((item) => item.name).filter(Boolean), [items]);
+  const names = useMemo(
+    () =>
+      items
+        .map((item) => item.name)
+        .filter((name) => Boolean(name) && !String(name).startsWith('local-comment-')),
+    [items],
+  );
   const highlightName = seedNotification?.name || null;
 
   useEffect(() => {
@@ -299,6 +323,20 @@ export default function InboxActivityPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [taskId, clearedView]);
 
+  useEffect(() => {
+    setMuted(false);
+    setSnoozeOpen(false);
+    setReplyingToName(null);
+    setIsSubmittingReply(false);
+    isSubmittingReplyRef.current = false;
+  }, [taskId]);
+
+  useEffect(() => {
+    if (!replyingToName) return undefined;
+    const timer = window.setTimeout(() => composerRef.current?.focus?.(), 0);
+    return () => window.clearTimeout(timer);
+  }, [replyingToName]);
+
   const handleClearOrUnclear = async () => {
     if (busy || !names.length) return;
     setBusy(true);
@@ -310,6 +348,95 @@ export default function InboxActivityPanel({
       }
     } finally {
       setBusy(false);
+    }
+  };
+
+  const handleSnoozeSelect = async (until: string) => {
+    if (busy || !names.length) return;
+    setBusy(true);
+    try {
+      await onSnooze(until, names);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleMute = async () => {
+    if (busy || muted || !taskId) return;
+    setBusy(true);
+    try {
+      const result = await onMute(taskId);
+      if (!result?.error) setMuted(true);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleToggleReaction = async (commentId: string, emoji: string) => {
+    if (!commentId || !emoji) return;
+    const result = await toggleBoardTaskCommentReaction({ commentId, emoji });
+    if (result.error) {
+      showErrorToast(result.error);
+      return;
+    }
+    const nextReactions = Array.isArray(result.data?.reactions) ? result.data.reactions : null;
+    if (!nextReactions) return;
+    setItems((prev) =>
+      prev.map((item) =>
+        resolveInboxCommentId(item) === commentId ? { ...item, reactions: nextReactions } : item,
+      ),
+    );
+  };
+
+  const handleAddReply = async (content: string, pendingFiles: File[] = []) => {
+    if (!taskId || isSubmittingReplyRef.current) return;
+    isSubmittingReplyRef.current = true;
+    setIsSubmittingReply(true);
+    try {
+      const result = await addBoardTaskComment({ taskId, message: content });
+      if (result.error) {
+        throw new Error(result.error);
+      }
+
+      const commentId = result.data?.name ?? result.data?.id;
+      const files = Array.isArray(pendingFiles) ? pendingFiles : [];
+      if (commentId && files.length > 0) {
+        await Promise.all(
+          files.map((file) =>
+            uploadBoardCommentAttachment(commentId, file).then((uploadResult) => {
+              if (uploadResult.error) {
+                showErrorToast(`Failed to attach '${file.name}': ${uploadResult.error}`);
+              }
+            }),
+          ),
+        );
+      }
+
+      const message =
+        htmlToPlainText(result.data?.content) || htmlToPlainText(content) || 'Comment';
+      setItems((prev) => [
+        {
+          name: commentId ? `local-comment-${commentId}` : `local-comment-${crypto.randomUUID()}`,
+          type: 'comment_added',
+          actor: profileData?.email || null,
+          actor_name: profileData?.full_name || profileData?.email || 'You',
+          actor_image: profileData?.profile_image || null,
+          message,
+          comment_id: commentId || null,
+          task: taskId,
+          list: headerNotification?.list,
+          space: headerNotification?.space,
+          folder: headerNotification?.folder,
+          task_title: headerNotification?.task_title,
+          creation: result.data?.creation || new Date().toISOString(),
+          is_read: 1,
+        },
+        ...prev,
+      ]);
+      setReplyingToName(null);
+    } finally {
+      isSubmittingReplyRef.current = false;
+      setIsSubmittingReply(false);
     }
   };
 
@@ -346,29 +473,38 @@ export default function InboxActivityPanel({
           </div>
 
           <div className='flex shrink-0 items-center gap-1 pt-0.5'>
-            <div className='mr-1 hidden items-center lg:flex'>
-              <IconGhostButton title='Expand'>
-                <RiExpandDiagonalLine size={16} />
-              </IconGhostButton>
-              <IconGhostButton title='Mute'>
-                <RiNotificationOffLine size={16} />
-              </IconGhostButton>
-              <IconGhostButton title='Archive'>
-                <RiArchiveLine size={16} />
-              </IconGhostButton>
-              <IconGhostButton title='Snooze'>
-                <RiAlarmLine size={16} />
-              </IconGhostButton>
-              <IconGhostButton title='More'>
-                <RiMoreLine size={16} />
-              </IconGhostButton>
-            </div>
+            <IconGhostButton
+              title={muted ? 'Notifications muted' : 'Mute notifications for this task'}
+              onClick={handleMute}
+              disabled={busy || muted}
+            >
+              <RiNotificationOffLine size={16} />
+            </IconGhostButton>
+
+            <InboxSnoozePopover
+              open={snoozeOpen}
+              onOpenChange={setSnoozeOpen}
+              onSelect={handleSnoozeSelect}
+            >
+              <button
+                type='button'
+                title='Snooze'
+                disabled={busy || !names.length}
+                className='rounded-md p-1.5 text-[#7c828d] transition hover:bg-[#eef0f3] hover:text-[#292d34] disabled:opacity-30'
+                onClick={(event) => {
+                  event.preventDefault();
+                  setSnoozeOpen(true);
+                }}
+              >
+                <RiTimeLine size={16} />
+              </button>
+            </InboxSnoozePopover>
 
             {headerNotification ? (
               <button
                 type='button'
                 onClick={() => onOpenTask(headerNotification)}
-                className='inline-flex h-8 items-center gap-1.5 rounded-md border border-[#d6d9de] bg-bg-white-0 px-2.5 text-[13px] font-medium text-[#292d34] transition hover:bg-[#eef0f3]'
+                className='ml-1 inline-flex h-8 items-center gap-1.5 rounded-md border border-[#d6d9de] bg-bg-white-0 px-2.5 text-[13px] font-medium text-[#292d34] transition hover:bg-[#eef0f3]'
               >
                 <RiLayoutRightLine size={15} className='text-[#7c828d]' />
                 Details
@@ -403,16 +539,40 @@ export default function InboxActivityPanel({
             ) : (
               <div className='flex flex-col gap-5'>
                 {items.map((item) => (
-                  <ActivityFeedItem
-                    key={item.name}
-                    notification={item}
-                    highlighted={
-                      highlightName
-                        ? item.name === highlightName
-                        : isCommentNotification(item) && item.name === items[0]?.name
-                    }
-                    onOpenTask={onOpenTask}
-                  />
+                  <div key={item.name} className='flex flex-col gap-2'>
+                    <ActivityFeedItem
+                      notification={item}
+                      highlighted={
+                        highlightName
+                          ? item.name === highlightName
+                          : isCommentNotification(item) && item.name === items[0]?.name
+                      }
+                      isReplying={replyingToName === item.name}
+                      onToggleReaction={handleToggleReaction}
+                      onReply={
+                        isCommentNotification(item)
+                          ? () => {
+                              if (isSubmittingReplyRef.current) return;
+                              setReplyingToName((current) =>
+                                current === item.name ? null : item.name,
+                              );
+                            }
+                          : undefined
+                      }
+                    />
+                    {replyingToName === item.name ? (
+                      <BoardCommentComposer
+                        ref={composerRef}
+                        onSubmit={handleAddReply}
+                        isSubmitting={isSubmittingReply}
+                        disabled={!taskId || isSubmittingReply}
+                        placeholder='Add a comment...'
+                        onSearchMentions={searchMentions}
+                        sidebarTree={sidebarTree}
+                        currentListId={headerNotification?.list ?? null}
+                      />
+                    ) : null}
+                  </div>
                 ))}
                 {loading ? (
                   <div className='flex justify-center py-2 text-text-soft-400'>

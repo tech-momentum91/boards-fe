@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   RiCheckDoubleLine,
   RiCheckLine,
@@ -35,6 +35,7 @@ import {
   markInboxUnread,
   snoozeInboxNotification,
   unclearInboxNotifications,
+  unfollowBoardTask,
 } from '@/services/inbox-service';
 import { ensureBoardPushSubscription, getBoardPushPermission } from '@/services/board-push';
 import InboxNotificationRow from './InboxNotificationRow';
@@ -50,6 +51,10 @@ import {
 
 const INBOX_HEADER_ITEM = { label: 'Inbox' };
 const PAGE_SIZE = 50;
+
+function inboxTaskPath(taskId) {
+  return `/inbox/${encodeURIComponent(taskId)}`;
+}
 
 function buildResourcePath(notification) {
   const type = notification?.resource_type || notification?.payload?.resource_type;
@@ -79,6 +84,8 @@ function buildResourcePath(notification) {
 
 export default function BoardsInboxPage() {
   const navigate = useNavigate();
+  const { taskId: inboxTaskParam } = useParams();
+  const selectedTaskId = inboxTaskParam || null;
   const { syncVersion, refresh: refreshInboxSync } = useInboxSync();
   const [sidebarTree, setSidebarTree] = useState([]);
   const [expandedIds, setExpandedIds] = useState([]);
@@ -98,8 +105,28 @@ export default function BoardsInboxPage() {
   const [inviteBusy, setInviteBusy] = useState(false);
   const [pushPermission, setPushPermission] = useState(() => getBoardPushPermission());
   const [isEnablingPush, setIsEnablingPush] = useState(false);
-  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const requestIdRef = useRef(0);
+  const skipFilterCloseRef = useRef(true);
+
+  const openInboxTask = useCallback(
+    (taskId) => {
+      if (!taskId) return;
+      navigate(inboxTaskPath(taskId));
+    },
+    [navigate],
+  );
+
+  const closeInboxTask = useCallback(() => {
+    navigate('/inbox');
+  }, [navigate]);
+
+  const goToInboxTaskOrClose = useCallback(
+    (taskId) => {
+      if (taskId) openInboxTask(taskId);
+      else closeInboxTask();
+    },
+    [openInboxTask, closeInboxTask],
+  );
 
   const handleSelectItem = useCallback(
     (item: { id?: string; type?: string }) => {
@@ -240,7 +267,11 @@ export default function BoardsInboxPage() {
   }, [taskStacks, selectedTaskId]);
 
   useEffect(() => {
-    setSelectedTaskId(null);
+    if (skipFilterCloseRef.current) {
+      skipFilterCloseRef.current = false;
+      return;
+    }
+    if (selectedTaskId) closeInboxTask();
   }, [filters]);
 
   const patchLocalMany = useCallback((names, patch) => {
@@ -314,7 +345,7 @@ export default function BoardsInboxPage() {
     await markStackRead();
 
     if (notification.task) {
-      setSelectedTaskId(notification.task);
+      openInboxTask(notification.task);
     }
   };
 
@@ -359,7 +390,7 @@ export default function BoardsInboxPage() {
     }
     setTotalCount((count) => Math.max(0, count - targets.length));
     refreshInboxSync({ force: false });
-    setSelectedTaskId(next?.primary?.task || null);
+    goToInboxTaskOrClose(next?.primary?.task);
   };
 
   const handleActivityUnclear = async (names) => {
@@ -379,7 +410,52 @@ export default function BoardsInboxPage() {
       targets.length === 1 ? 'Notification restored' : `${targets.length} notifications restored`,
     );
     refreshInboxSync({ force: false });
-    setSelectedTaskId(next?.primary?.task || null);
+    goToInboxTaskOrClose(next?.primary?.task);
+  };
+
+  const handleActivitySnooze = async (snoozedUntil, names) => {
+    const targets = (Array.isArray(names) ? names : []).filter(Boolean);
+    if (!targets.length) return;
+    const next =
+      findAdjacentTaskStack(selectedTaskIndex, 1) || findAdjacentTaskStack(selectedTaskIndex, -1);
+
+    const outcomes = await Promise.all(
+      targets.map(async (name) => {
+        const result = await snoozeInboxNotification(name, snoozedUntil);
+        return { name, error: result.error || null };
+      }),
+    );
+    const failed = outcomes.filter((item) => item.error);
+    const succeeded = outcomes.filter((item) => !item.error).map((item) => item.name);
+
+    if (succeeded.length) {
+      patchLocalMany(succeeded, { snoozed_until: snoozedUntil });
+      setTotalCount((count) => Math.max(0, count - succeeded.length));
+      showSuccessToast(
+        succeeded.length === 1 ? 'Notification snoozed' : `${succeeded.length} notifications snoozed`,
+      );
+      refreshInboxSync({ force: false });
+      if (!failed.length) goToInboxTaskOrClose(next?.primary?.task);
+    }
+
+    if (failed.length) {
+      showErrorToast(
+        failed.length === targets.length
+          ? failed[0].error
+          : `Snoozed ${succeeded.length}/${targets.length}; some failed.`,
+      );
+    }
+  };
+
+  const handleActivityMute = async (taskId) => {
+    if (!taskId) return { error: 'Task is required' };
+    const result = await unfollowBoardTask(taskId);
+    if (result.error) {
+      showErrorToast(result.error);
+      return { error: result.error };
+    }
+    showSuccessToast('Muted notifications for this task');
+    return {};
   };
 
   const handleInviteAccept = async () => {
@@ -680,16 +756,19 @@ export default function BoardsInboxPage() {
                 canGoNext={Boolean(findAdjacentTaskStack(selectedTaskIndex, 1))}
                 onPrev={() => {
                   const prev = findAdjacentTaskStack(selectedTaskIndex, -1);
-                  if (prev?.primary?.task) setSelectedTaskId(prev.primary.task);
+                  if (prev?.primary?.task) openInboxTask(prev.primary.task);
                 }}
                 onNext={() => {
                   const next = findAdjacentTaskStack(selectedTaskIndex, 1);
-                  if (next?.primary?.task) setSelectedTaskId(next.primary.task);
+                  if (next?.primary?.task) openInboxTask(next.primary.task);
                 }}
-                onClose={() => setSelectedTaskId(null)}
+                onClose={closeInboxTask}
                 onClear={handleActivityClear}
                 onUnclear={handleActivityUnclear}
+                onSnooze={handleActivitySnooze}
+                onMute={handleActivityMute}
                 onOpenTask={handleOpenTaskFromActivity}
+                sidebarTree={sidebarTree}
                 onMarkedRead={(names) => {
                   patchLocalMany(names, { is_read: 1 });
                   refreshInboxSync({ force: false });

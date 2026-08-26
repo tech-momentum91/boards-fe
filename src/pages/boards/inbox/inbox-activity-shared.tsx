@@ -41,12 +41,22 @@ export type InboxNotification = {
     from?: StatusSnap | string | null;
     to?: StatusSnap | string | null;
     emoji?: string;
+    comment_id?: string;
     file_name?: string;
     field_name?: string;
     field_id?: string;
     added?: string[];
     removed?: string[];
   } | null;
+  comment_id?: string | null;
+  reference_doctype?: string | null;
+  reference_name?: string | null;
+  reactions?: Array<{
+    emoji?: string;
+    count?: number;
+    current_user_reacted?: boolean;
+    users?: Array<{ user?: string; full_name?: string }>;
+  }>;
   is_read?: number | boolean;
   is_cleared?: number | boolean;
   creation?: string;
@@ -382,6 +392,19 @@ export function ActivityContent({
 
 export function isCommentNotification(notification: InboxNotification) {
   return notification.type === 'mention' || notification.type === 'comment_added';
+}
+
+export function resolveInboxCommentId(notification?: InboxNotification | null): string | null {
+  if (!notification) return null;
+  const fromField = String(notification.comment_id || '').trim();
+  if (fromField) return fromField;
+  const fromPayload = String(notification.payload?.comment_id || '').trim();
+  if (fromPayload) return fromPayload;
+  if (notification.reference_doctype === 'Task Comment Item') {
+    const fromRef = String(notification.reference_name || '').trim();
+    if (fromRef) return fromRef;
+  }
+  return null;
 }
 
 export function buildInboxBreadcrumb(notification?: InboxNotification | null) {
