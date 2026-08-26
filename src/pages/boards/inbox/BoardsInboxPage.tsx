@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   RiCheckDoubleLine,
+  RiCheckLine,
+  RiCloseLine,
   RiFilter3Line,
   RiLoader4Line,
   RiNotification3Line,
@@ -31,6 +33,7 @@ import {
   markInboxRead,
   markInboxUnread,
   snoozeInboxNotification,
+  unclearInboxNotifications,
 } from '@/services/inbox-service';
 import { ensureBoardPushSubscription, getBoardPushPermission } from '@/services/board-push';
 import InboxNotificationRow from './InboxNotificationRow';
@@ -74,7 +77,7 @@ export default function BoardsInboxPage() {
   const [isGlobalSearchOpen, setIsGlobalSearchOpen] = useState(false);
   const { isSidebarCollapsed, toggleSidebar } = useBoardsSidebarCollapsed();
 
-  const [filters, setFilters] = useState([]);
+  const [filters, setFilters] = useState<string[]>([]);
   const [filterOpen, setFilterOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -206,11 +209,15 @@ export default function BoardsInboxPage() {
       prev
         .map((item) => (nameSet.has(item.name) ? { ...item, ...patch } : item))
         .filter((item) => {
-          if (patch.is_cleared && !filters.includes('cleared')) return false;
-          if (patch.snoozed_until && !filters.includes('cleared')) return false;
-          if (patch.is_read === 1 && filters.includes('unread') && !filters.includes('cleared')) {
-            return false;
+          // Visibility rules only apply to rows we just mutated; leave the rest alone.
+          if (!nameSet.has(item.name)) return true;
+
+          if (filters.includes('cleared')) {
+            return Boolean(item.is_cleared);
           }
+          if (item.is_cleared) return false;
+          if (patch.snoozed_until) return false;
+          if (filters.includes('unread') && item.is_read) return false;
           return true;
         }),
     );
@@ -332,6 +339,22 @@ export default function BoardsInboxPage() {
     refreshInboxSync({ force: false });
   };
 
+  const handleUnclear = async (notification, names) => {
+    const targets = Array.isArray(names) && names.length ? names : [notification.name];
+    patchLocalMany(targets, { is_cleared: 0, cleared_at: null });
+    const result = await unclearInboxNotifications(targets);
+    if (result.error) {
+      showErrorToast(result.error);
+      loadNotifications({ append: false });
+      return;
+    }
+    setTotalCount((count) => Math.max(0, count - targets.length));
+    showSuccessToast(
+      targets.length === 1 ? 'Notification restored' : `${targets.length} notifications restored`,
+    );
+    refreshInboxSync({ force: false });
+  };
+
   const handleSnooze = async (notification, snoozedUntil, names) => {
     const targets = Array.isArray(names) && names.length ? names : [notification.name];
     const outcomes = await Promise.all(
@@ -423,47 +446,82 @@ export default function BoardsInboxPage() {
 
           <div className='flex items-center justify-between gap-3 bg-bg-weak-50 px-3 py-2'>
             <Popover.Root open={filterOpen} onOpenChange={setFilterOpen}>
-              <Popover.Trigger asChild>
-                <button
-                  type='button'
-                  className={cn(
-                    'inline-flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm transition',
-                    filters.length
-                      ? 'bg-primary-alpha-10 text-primary-base'
-                      : 'text-text-sub-500 hover:bg-bg-weak-50',
-                  )}
-                >
-                  <RiFilter3Line size={16} />
-                  Filter
-                  {filters.length ? (
-                    <span className='rounded-full bg-primary-base px-1.5 text-[10px] font-semibold text-static-white'>
-                      {filters.length}
+              <div
+                className={cn(
+                  'inline-flex h-7 items-center text-[13px] font-medium transition',
+                  filters.length
+                    ? 'rounded-full bg-primary-alpha-10 text-primary-base ring-1 ring-inset ring-primary-alpha-16'
+                    : 'rounded-lg text-text-sub-500',
+                )}
+              >
+                <Popover.Trigger asChild>
+                  <button
+                    type='button'
+                    className={cn(
+                      'inline-flex h-full items-center gap-1.5 px-2.5 transition',
+                      filters.length
+                        ? 'rounded-l-full hover:bg-primary-alpha-10'
+                        : 'rounded-lg hover:bg-bg-white-0',
+                      filters.length && 'pr-1.5',
+                    )}
+                  >
+                    <RiFilter3Line size={15} className='shrink-0' />
+                    <span className='max-w-[180px] truncate'>
+                      {filters.length === 0
+                        ? 'Filter'
+                        : filters.length === 1
+                          ? INBOX_FILTERS.find((item) => item.id === filters[0])?.label || 'Filter'
+                          : `${filters.length} filters`}
                     </span>
-                  ) : null}
-                </button>
-              </Popover.Trigger>
+                  </button>
+                </Popover.Trigger>
+                {filters.length ? (
+                  <button
+                    type='button'
+                    aria-label='Clear filters'
+                    className='mr-1 flex size-5 shrink-0 items-center justify-center rounded-full text-primary-base transition hover:bg-primary-alpha-10'
+                    onClick={() => {
+                      setFilters([]);
+                      setFilterOpen(false);
+                    }}
+                  >
+                    <RiCloseLine size={14} />
+                  </button>
+                ) : null}
+              </div>
               <Popover.Content
                 side='bottom'
                 align='start'
+                sideOffset={6}
                 showArrow={false}
-                className='w-56 rounded-2xl border border-stroke-soft-200 p-1.5 shadow-regular-md'
+                className='w-[240px] rounded-xl border border-stroke-soft-200 p-1.5 shadow-regular-md'
               >
                 {INBOX_FILTERS.map((filter) => {
                   const active = filters.includes(filter.id);
+                  const Icon = filter.icon;
                   return (
                     <button
                       key={filter.id}
                       type='button'
                       onClick={() => setFilters((prev) => toggleInboxFilter(prev, filter.id))}
                       className={cn(
-                        'flex w-full items-center justify-between rounded-xl px-2.5 py-2 text-left text-sm transition',
+                        'flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] transition',
                         active
-                          ? 'bg-primary-alpha-10 text-primary-base'
+                          ? 'bg-bg-weak-50 font-medium text-primary-base'
                           : 'text-text-main-900 hover:bg-bg-weak-50',
                       )}
                     >
-                      {filter.label}
-                      {active ? <span className='text-xs'>On</span> : null}
+                      <Icon
+                        size={16}
+                        className={cn(
+                          'shrink-0',
+                          active ? 'text-primary-base' : 'text-icon-sub-500',
+                        )}
+                      />
+                      <span className='min-w-0 flex-1 truncate'>{filter.label}</span>
+                      {active ? (
+                        <RiCheckLine size={16} className='shrink-0 text-primary-base' />
+                      ) : null}
                     </button>
                   );
                 })}
@@ -556,9 +614,11 @@ export default function BoardsInboxPage() {
                             key={stack.stackKey}
                             notification={stack.primary}
                             count={stack.count}
+                            isClearedView={filters.includes('cleared')}
                             onActivate={(item) => handleActivateStack(item, stack.names)}
                             onMarkUnread={(item) => handleMarkUnread(item, stack.names)}
                             onClear={(item) => handleClear(item, stack.names)}
+                            onUnclear={(item) => handleUnclear(item, stack.names)}
                             onSnooze={(item, until) => handleSnooze(item, until, stack.names)}
                           />
                         ))}

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import {
   RiAlarmLine,
+  RiArrowGoBackLine,
   RiCheckboxCircleFill,
   RiCheckLine,
   RiInboxArchiveLine,
@@ -43,15 +44,18 @@ type InboxNotification = {
     removed?: string[];
   } | null;
   is_read?: number | boolean;
+  is_cleared?: number | boolean;
   creation?: string;
 };
 
 type InboxNotificationRowProps = {
   notification: InboxNotification;
   count?: number;
+  isClearedView?: boolean;
   onActivate: (notification: InboxNotification) => void;
   onMarkUnread: (notification: InboxNotification) => void;
   onClear: (notification: InboxNotification) => void;
+  onUnclear: (notification: InboxNotification) => void;
   onSnooze: (notification: InboxNotification, snoozedUntil: string) => void;
 };
 
@@ -276,14 +280,16 @@ function ActivityContent({ notification }: { notification: InboxNotification }) 
 /**
  * ClickUp light inbox row inside a bordered table group:
  * status · title · avatar · activity · count · date
- * Hover: mark · snooze · Clear (primary)
+ * Hover: mark · snooze · Clear / Unclear (primary)
  */
 export default function InboxNotificationRow({
   notification,
   count = 1,
+  isClearedView = false,
   onActivate,
   onMarkUnread,
   onClear,
+  onUnclear,
   onSnooze,
 }: InboxNotificationRowProps) {
   const [snoozeOpen, setSnoozeOpen] = useState(false);
@@ -293,6 +299,7 @@ export default function InboxNotificationRow({
   const initials = useMemo(() => getInitials(actor), [actor]);
   const avatarColor = useMemo(() => avatarColorFor(actor), [actor]);
   const displayCount = Number.isFinite(count) && count > 0 ? count : 1;
+  const showAsCleared = isClearedView || Boolean(notification.is_cleared);
 
   return (
     <div
@@ -366,53 +373,67 @@ export default function InboxNotificationRow({
           onClick={(event) => event.stopPropagation()}
           onKeyDown={(event) => event.stopPropagation()}
         >
-          {isRead ? (
+          {showAsCleared ? (
             <button
               type='button'
-              title='Mark unread'
-              className='rounded-md p-1.5 text-icon-sub-500 hover:bg-bg-white-0 hover:text-text-main-900'
-              onClick={() => onMarkUnread(notification)}
+              title='Unclear'
+              className='inline-flex items-center gap-1 rounded-md bg-primary-base px-2.5 py-1.5 text-[12px] font-medium text-static-white hover:opacity-90'
+              onClick={() => onUnclear(notification)}
             >
-              <RiMailLine size={16} />
+              <RiArrowGoBackLine size={14} />
+              Unclear
             </button>
           ) : (
-            <button
-              type='button'
-              title='Mark read'
-              className='rounded-md p-1.5 text-icon-sub-500 hover:bg-bg-white-0 hover:text-text-main-900'
-              onClick={() => onActivate(notification)}
-            >
-              <RiInboxArchiveLine size={16} />
-            </button>
+            <>
+              {isRead ? (
+                <button
+                  type='button'
+                  title='Mark unread'
+                  className='rounded-md p-1.5 text-icon-sub-500 hover:bg-bg-white-0 hover:text-text-main-900'
+                  onClick={() => onMarkUnread(notification)}
+                >
+                  <RiMailLine size={16} />
+                </button>
+              ) : (
+                <button
+                  type='button'
+                  title='Mark read'
+                  className='rounded-md p-1.5 text-icon-sub-500 hover:bg-bg-white-0 hover:text-text-main-900'
+                  onClick={() => onActivate(notification)}
+                >
+                  <RiInboxArchiveLine size={16} />
+                </button>
+              )}
+
+              <InboxSnoozePopover
+                open={snoozeOpen}
+                onOpenChange={setSnoozeOpen}
+                onSelect={(until) => onSnooze(notification, until)}
+              >
+                <button
+                  type='button'
+                  title='Snooze'
+                  className='rounded-md p-1.5 text-icon-sub-500 hover:bg-bg-white-0 hover:text-text-main-900'
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setSnoozeOpen(true);
+                  }}
+                >
+                  <RiTimeLine size={16} />
+                </button>
+              </InboxSnoozePopover>
+
+              <button
+                type='button'
+                title='Clear'
+                className='ml-0.5 inline-flex items-center gap-1 rounded-md bg-primary-base px-2.5 py-1.5 text-[12px] font-medium text-static-white hover:opacity-90'
+                onClick={() => onClear(notification)}
+              >
+                <RiCheckLine size={14} />
+                Clear
+              </button>
+            </>
           )}
-
-          <InboxSnoozePopover
-            open={snoozeOpen}
-            onOpenChange={setSnoozeOpen}
-            onSelect={(until) => onSnooze(notification, until)}
-          >
-            <button
-              type='button'
-              title='Snooze'
-              className='rounded-md p-1.5 text-icon-sub-500 hover:bg-bg-white-0 hover:text-text-main-900'
-              onClick={(event) => {
-                event.stopPropagation();
-                setSnoozeOpen(true);
-              }}
-            >
-              <RiTimeLine size={16} />
-            </button>
-          </InboxSnoozePopover>
-
-          <button
-            type='button'
-            title='Clear'
-            className='ml-0.5 inline-flex items-center gap-1 rounded-md bg-primary-base px-2.5 py-1.5 text-[12px] font-medium text-static-white hover:opacity-90'
-            onClick={() => onClear(notification)}
-          >
-            <RiCheckLine size={14} />
-            Clear
-          </button>
         </span>
       </span>
     </div>

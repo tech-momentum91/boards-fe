@@ -88,6 +88,19 @@ export async function clearInboxNotifications(names) {
   }
 }
 
+export async function unclearInboxNotifications(names) {
+  try {
+    const result = await apiClient.post(`${INBOX_API}.unclear`, {
+      names: Array.isArray(names) ? names : [names],
+    });
+    return unwrap(result, 'Failed to restore notification.');
+  } catch (error) {
+    return {
+      error: extractErrorMessage(error.serialized || error, 'Failed to restore notification.'),
+    };
+  }
+}
+
 export async function clearAllInboxNotifications() {
   try {
     const result = await apiClient.post(`${INBOX_API}.clear_all`);

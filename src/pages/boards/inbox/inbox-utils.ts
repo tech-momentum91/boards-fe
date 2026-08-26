@@ -9,14 +9,23 @@ import {
   setSeconds,
   startOfDay,
 } from 'date-fns';
+import type { IconType } from 'react-icons';
+import {
+  RiAlarmLine,
+  RiArchiveLine,
+  RiAtLine,
+  RiAccountCircleLine,
+  RiEyeLine,
+  RiInbox2Line,
+} from 'react-icons/ri';
 
-export const INBOX_FILTERS = [
-  { id: 'assigned', label: 'Assigned' },
-  { id: 'mentions', label: 'Mentions' },
-  { id: 'watching', label: 'Watching' },
-  { id: 'unread', label: 'Unread' },
-  { id: 'reminder', label: 'Reminder' },
-  { id: 'cleared', label: 'Cleared' },
+export const INBOX_FILTERS: Array<{ id: string; label: string; icon: IconType }> = [
+  { id: 'mentions', label: 'Mentions', icon: RiAtLine },
+  { id: 'assigned', label: 'Assigned to me', icon: RiAccountCircleLine },
+  { id: 'watching', label: 'Watching', icon: RiEyeLine },
+  { id: 'unread', label: 'Unread', icon: RiInbox2Line },
+  { id: 'reminder', label: 'Reminders', icon: RiAlarmLine },
+  { id: 'cleared', label: 'Cleared', icon: RiArchiveLine },
 ];
 
 /** Cleared is exclusive — selecting it drops every other filter. */
