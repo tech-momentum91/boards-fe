@@ -34,7 +34,8 @@ const routes: RouteObject[] = [
   { path: '/email-sent', element: <EmailSent /> },
   { path: '/public/task/:taskId', element: <PublicTaskPage /> },
   { path: '/boards', element: protectedBoardsRoute(<BoardsPage />) },
-  { path: '/boards/inbox', element: protectedBoardsRoute(<BoardsInboxPage />) },
+  { path: '/inbox', element: protectedBoardsRoute(<BoardsInboxPage />) },
+  { path: '/boards/inbox', element: <Navigate to='/inbox' replace /> },
   { path: '/boards/profile', element: protectedBoardsRoute(<BoardsProfilePage />) },
   { path: '/boards/no-access', element: protectedBoardsRoute(<BoardNoAccessPage />) },
   {

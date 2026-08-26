@@ -67,7 +67,7 @@ import {
   buildTaskFieldUpdatePayload,
   normalizeListTask,
 } from '@/services/tasks-service';
-import { showErrorToast, showSuccessToast } from '@/utils/error-utils';
+import { createInboxReminder, unfollowBoardTask } from '@/services/inbox-service';
 import { getAssigneeDisplayName, getAssigneeFirstNameInitial, appendUniqueTags, parseCommaSeparatedTags } from '@/utils/task-utils';
 import { CrmAccountAvatar } from '@/components/crm-accounts/crm-account-avatar';
 import { selectUserSearch } from '@/redux/userSlice';
@@ -1635,6 +1635,8 @@ function TaskRowActions({
   onStartRename,
   onArchive,
   onFavorite,
+  onUnfollow,
+  onRemindInbox,
   onDuplicate,
   onDelete,
   isTableLayout = false,
@@ -1689,6 +1691,8 @@ function TaskRowActions({
           onRename={() => onStartRename?.(task.id)}
           onArchive={() => onArchive?.(task.id)}
           onFavorite={() => onFavorite?.(task.id)}
+          onUnfollow={() => onUnfollow?.(task.id)}
+          onRemindInbox={(remindAt) => onRemindInbox?.(task.id, remindAt)}
           onDuplicate={() => onDuplicate?.(task.id)}
           onDelete={() => onDelete?.(task.id)}
         />
@@ -4627,6 +4631,30 @@ export default function BoardTaskView({
     [onFavoriteTasksChange, tasks],
   );
 
+  const handleUnfollowTask = useCallback(async (taskId) => {
+    setOpenTaskMenuId(null);
+    if (!taskId) return;
+
+    const result = await unfollowBoardTask(taskId);
+    if (result.error) {
+      showErrorToast(result.error);
+      return;
+    }
+    showSuccessToast('Unfollowed task');
+  }, []);
+
+  const handleRemindInbox = useCallback(async (taskId, remindAt) => {
+    setOpenTaskMenuId(null);
+    if (!taskId || !remindAt) return;
+
+    const result = await createInboxReminder(taskId, remindAt);
+    if (result.error) {
+      showErrorToast(result.error);
+      return;
+    }
+    showSuccessToast('Reminder set');
+  }, []);
+
   const handleRequestDeleteTask = useCallback(
     (taskId) => {
       setOpenTaskMenuId(null);
@@ -5413,6 +5441,8 @@ export default function BoardTaskView({
       onStartRename: canEditTasks ? handleStartRename : undefined,
       onArchive: canEditTasks ? handleArchiveTask : undefined,
       onFavorite: handleFavoriteTask,
+      onUnfollow: handleUnfollowTask,
+      onRemindInbox: handleRemindInbox,
       onDuplicate: canCreateTasks ? handleDuplicateTask : undefined,
       onDelete: canDeleteTasks ? handleRequestDeleteTask : undefined,
     }),
@@ -5421,6 +5451,8 @@ export default function BoardTaskView({
       handleArchiveTask,
       handleDuplicateTask,
       handleFavoriteTask,
+      handleUnfollowTask,
+      handleRemindInbox,
       handleRequestDeleteTask,
       handleStartRename,
       handleTaskAdded,
@@ -5474,6 +5506,8 @@ export default function BoardTaskView({
           onStartRename={canEditTasks ? handleStartRename : undefined}
           onArchive={canEditTasks ? handleArchiveTask : undefined}
           onFavorite={handleFavoriteTask}
+          onUnfollow={handleUnfollowTask}
+          onRemindInbox={handleRemindInbox}
           onDuplicate={canCreateTasks ? handleDuplicateTask : undefined}
           onDelete={canDeleteTasks ? handleRequestDeleteTask : undefined}
         />

@@ -93,7 +93,7 @@ import {
   getBoardSearchStatusProgress,
 } from '../utils/boards-global-search-utils';
 import { cn } from '@/utils/cn';
-import { showErrorToast, showSuccessToast } from '@/utils/error-utils';
+import { useInboxSync } from '@/contexts/inbox-sync-context';
 import CreateBoardModal from '../modals/CreateBoardModal';
 import DeleteBoardModal, {
   setSkipDeleteBoardConfirm,
@@ -693,6 +693,7 @@ const Sidebar = ({
   const dispatch = useDispatch();
   const { user: authUser, logout: authLogout } = useAuth();
   const { profileData } = useSelector((state) => state.profile);
+  const { unreadCount: inboxUnreadCount } = useInboxSync();
 
   const sidebarUser = useMemo(() => {
     const profile = (profileData ?? {}) as {
@@ -1319,16 +1320,21 @@ const Sidebar = ({
       </div>
       <div className='flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-5 pb-4 pt-5'>
         <Link
-          to='/boards/inbox'
+          to='/inbox'
           className={cn(
             'flex w-full items-center gap-2 rounded-lg px-1.5 py-1.5 text-left transition duration-200 ease-out',
-            location.pathname === '/boards/inbox'
+            location.pathname === '/inbox' || location.pathname === '/boards/inbox'
               ? 'bg-bg-white-0 text-text-sub-500 shadow-regular-sm'
               : 'text-text-sub-500 hover:bg-bg-weak-50',
           )}
         >
           <RiInbox2Line size={20} className='shrink-0' />
           <span className='truncate text-label-sm'>Inbox</span>
+          {inboxUnreadCount > 0 ? (
+            <span className='ml-auto rounded-full bg-primary-base px-1.5 text-[10px] font-semibold leading-4 text-static-white'>
+              {inboxUnreadCount > 99 ? '99+' : inboxUnreadCount}
+            </span>
+          ) : null}
         </Link>
 
         <section className='flex w-full flex-col gap-1.5'>

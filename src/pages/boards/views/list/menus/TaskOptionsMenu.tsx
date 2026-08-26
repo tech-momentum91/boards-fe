@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useRef } from 'react';
+import { forwardRef, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
   RiArchiveLine,
@@ -15,6 +15,7 @@ import {
   RiStarLine,
 } from 'react-icons/ri';
 import { cn } from '@/utils/cn';
+import InboxSnoozePopover from '@/pages/boards/inbox/InboxSnoozePopover';
 import useAnchoredMenuPosition from '../../../hooks/useAnchoredMenuPosition';
 import useHoverSubmenuController from '../../../hooks/useHoverSubmenuController';
 import TaskAddToMenu from './TaskAddToMenu';
@@ -70,6 +71,7 @@ export default function TaskOptionsMenu({
   const addToRef = useRef(null);
   const moveSubmenuRef = useRef(null);
   const addSubmenuRef = useRef(null);
+  const [remindOpen, setRemindOpen] = useState(false);
   const { closeSubmenu, getItemHandlers, getPanelHandlers, isOpen } = useHoverSubmenuController();
   const { top, left, maxHeight } = useAnchoredMenuPosition(anchorRef, menuRef);
 
@@ -125,6 +127,12 @@ export default function TaskOptionsMenu({
     onTaskAdded?.();
   };
 
+  const handleRemindSelect = (remindAt) => {
+    setRemindOpen(false);
+    onClose?.();
+    onRemindInbox?.(remindAt);
+  };
+
   return createPortal(
     <>
       <div
@@ -152,12 +160,20 @@ export default function TaskOptionsMenu({
           label='Unfollow Task'
           onClick={() => handleAction(onUnfollow)}
         />
-        <MenuItem
-          icon={RiInbox2Line}
-          label='Remind Me Inbox'
-          hasSubmenu
-          onClick={() => handleAction(onRemindInbox)}
-        />
+        <InboxSnoozePopover
+          open={remindOpen}
+          onOpenChange={setRemindOpen}
+          onSelect={handleRemindSelect}
+        >
+          <div>
+            <MenuItem
+              icon={RiInbox2Line}
+              label='Remind Me Inbox'
+              hasSubmenu
+              onClick={() => setRemindOpen(true)}
+            />
+          </div>
+        </InboxSnoozePopover>
 
         <Divider />
 
