@@ -1,8 +1,6 @@
 import { useMemo, useState } from 'react';
 import {
-  RiAlarmLine,
   RiArrowGoBackLine,
-  RiCheckboxCircleFill,
   RiCheckLine,
   RiInboxArchiveLine,
   RiMailLine,
@@ -10,48 +8,21 @@ import {
   RiUserLine,
 } from 'react-icons/ri';
 import * as Avatar from '@/components/ui/avatar';
-import { getPriorityColor } from '@/components/clients-management/constants';
-import * as Badge from '@/components/ui/badge';
 import { cn } from '@/utils/cn';
 import { formatInboxDateTime } from '@/utils/date-utils';
-import { getNotificationActionPhrase } from './inbox-utils';
+import {
+  ActivityContent,
+  TaskStatusGlyph,
+  resolveTaskStatusSnap,
+  type InboxNotification,
+} from './inbox-activity-shared';
 import InboxSnoozePopover from './InboxSnoozePopover';
-
-type StatusSnap = {
-  id?: string;
-  title?: string;
-  color?: string;
-  is_closed?: number | boolean;
-};
-
-type InboxNotification = {
-  name: string;
-  type: string;
-  actor?: string | null;
-  actor_name?: string | null;
-  actor_image?: string | null;
-  title?: string | null;
-  task_title?: string | null;
-  message?: string | null;
-  payload?: {
-    from?: StatusSnap | string | null;
-    to?: StatusSnap | string | null;
-    emoji?: string;
-    file_name?: string;
-    field_name?: string;
-    field_id?: string;
-    added?: string[];
-    removed?: string[];
-  } | null;
-  is_read?: number | boolean;
-  is_cleared?: number | boolean;
-  creation?: string;
-};
 
 type InboxNotificationRowProps = {
   notification: InboxNotification;
   count?: number;
   isClearedView?: boolean;
+  isSelected?: boolean;
   onActivate: (notification: InboxNotification) => void;
   onMarkUnread: (notification: InboxNotification) => void;
   onClear: (notification: InboxNotification) => void;
@@ -80,203 +51,6 @@ function avatarColorFor(name?: string | null) {
   return AVATAR_COLORS[hash] || 'gray';
 }
 
-function isStatusSnap(value: unknown): value is StatusSnap {
-  return Boolean(value) && typeof value === 'object' && 'title' in (value as object);
-}
-
-function formatDisplayValue(value: unknown) {
-  if (value == null || value === '') return null;
-  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
-    return String(value);
-  }
-  if (Array.isArray(value)) {
-    return value.filter(Boolean).map(String).join(', ') || null;
-  }
-  if (typeof value === 'object') {
-    const record = value as Record<string, unknown>;
-    if (typeof record.title === 'string') return record.title;
-    if (typeof record.name === 'string') return record.name;
-    if (typeof record.label === 'string') return record.label;
-  }
-  return null;
-}
-
-function StatusIcon({ notification }: { notification: InboxNotification }) {
-  const type = notification.type;
-  const to = notification.payload?.to;
-
-  if (type === 'overdue') {
-    return (
-      <span
-        className='flex size-[18px] items-center justify-center rounded-full border-2 border-error-base'
-        aria-hidden
-      >
-        <span className='size-1.5 rounded-full bg-error-base' />
-      </span>
-    );
-  }
-
-  if (type === 'reminder' || type === 'due_soon') {
-    return <RiAlarmLine size={18} className='text-primary-base' />;
-  }
-
-  if (isStatusSnap(to) && to.is_closed) {
-    return <RiCheckboxCircleFill size={18} className='text-success-base' />;
-  }
-
-  if (isStatusSnap(to) && to.color) {
-    return (
-      <span
-        className='size-[15px] rounded-full'
-        style={{ backgroundColor: to.color }}
-        aria-hidden
-      />
-    );
-  }
-
-  return (
-    <span
-      className='size-[15px] rounded-full border-[1.5px] border-dashed border-icon-soft-400'
-      aria-hidden
-    />
-  );
-}
-
-function StatusValue({ status }: { status?: StatusSnap | null }) {
-  if (!status?.title) return null;
-  return (
-    <span className='inline-flex max-w-[9rem] items-center gap-1 truncate text-[13px] text-text-sub-600'>
-      <span
-        className='size-[9px] shrink-0 rounded-[2px]'
-        style={{ backgroundColor: status.color || '#98A2B3' }}
-      />
-      <span className='truncate'>{status.title}</span>
-    </span>
-  );
-}
-
-function CommentBody({ text }: { text?: string | null }) {
-  const content = String(text || '').trim();
-  if (!content) return null;
-
-  const parts = content.split(/(@[\w.+-]+(?:\s+[\w.+-]+)?)/g);
-  return (
-    <span className='min-w-0 truncate text-[13px] text-text-sub-600'>
-      {parts.map((part, index) =>
-        part.startsWith('@') ? (
-          <span key={`${part}-${index}`} className='font-medium text-primary-base'>
-            {part}
-          </span>
-        ) : (
-          <span key={`${part}-${index}`}>{part}</span>
-        ),
-      )}
-    </span>
-  );
-}
-
-function ActivityContent({ notification }: { notification: InboxNotification }) {
-  const type = notification.type;
-  const payload = notification.payload;
-  const actor = notification.actor_name || notification.actor || 'Someone';
-  const phrase = getNotificationActionPhrase(notification);
-
-  if (type === 'mention' || type === 'comment_added') {
-    return <CommentBody text={notification.message} />;
-  }
-
-  if (type === 'comment_reaction') {
-    return (
-      <span className='truncate text-[13px] text-text-sub-600'>
-        <span>{actor} </span>
-        <span className='text-primary-base'>reacted</span>
-        {notification.message ? <span> {notification.message}</span> : null}
-      </span>
-    );
-  }
-
-  if (type === 'status_changed') {
-    const from = isStatusSnap(payload?.from) ? payload.from : null;
-    const to = isStatusSnap(payload?.to) ? payload.to : null;
-    return (
-      <span className='inline-flex min-w-0 items-center gap-1.5 overflow-hidden text-[13px]'>
-        <span className='truncate text-text-sub-600'>
-          {actor} <span className='text-primary-base'>{phrase}</span>
-          {from || to ? ':' : ''}
-        </span>
-        {from || to ? (
-          <span className='inline-flex min-w-0 items-center gap-1.5 overflow-hidden'>
-            <StatusValue status={from} />
-            <span className='shrink-0 text-text-soft-400'>→</span>
-            <StatusValue status={to} />
-          </span>
-        ) : null}
-      </span>
-    );
-  }
-
-  if (type === 'priority_changed') {
-    const to = formatDisplayValue(payload?.to);
-    return (
-      <span className='inline-flex min-w-0 items-center gap-1.5 overflow-hidden text-[13px]'>
-        <span className='truncate text-text-sub-600'>
-          {actor} <span className='text-primary-base'>{phrase}</span>
-          {to ? ':' : ''}
-        </span>
-        {to ? (
-          <Badge.Root variant='light' color={getPriorityColor(to)} className='uppercase'>
-            {to}
-          </Badge.Root>
-        ) : null}
-      </span>
-    );
-  }
-
-  if (type === 'custom_field_changed') {
-    const to = formatDisplayValue(payload?.to);
-    return (
-      <span className='inline-flex min-w-0 items-center gap-1.5 overflow-hidden text-[13px]'>
-        <span className='truncate text-text-sub-600'>
-          {actor} <span className='text-primary-base'>{phrase}</span>
-          {to ? ':' : ''}
-        </span>
-        {to ? (
-          <span className='inline-flex max-w-[10rem] truncate rounded px-1.5 py-0.5 text-[12px] font-medium text-static-white bg-success-base'>
-            {to}
-          </span>
-        ) : null}
-      </span>
-    );
-  }
-
-  if (type === 'attachment_added') {
-    const fileName = payload?.file_name || notification.message;
-    return (
-      <span className='min-w-0 truncate text-[13px] text-text-sub-600'>
-        <span>{actor} </span>
-        <span className='text-primary-base'>{phrase}</span>
-        {fileName ? (
-          <span className='ml-1 rounded bg-yellow-100 px-1 text-text-main-900'>{fileName}</span>
-        ) : null}
-      </span>
-    );
-  }
-
-  // Default: "Actor assigned this task to you" with action in primary blue
-  return (
-    <span className='min-w-0 truncate text-[13px] text-text-sub-600'>
-      <span>{actor} </span>
-      <span className='text-primary-base'>{phrase}</span>
-      {type === 'due_date_changed' || type === 'start_date_changed' || type === 'title_changed' ? (
-        <>
-          {formatDisplayValue(payload?.to) ? ': ' : ''}
-          <span className='text-text-sub-600'>{formatDisplayValue(payload?.to)}</span>
-        </>
-      ) : null}
-    </span>
-  );
-}
-
 /**
  * ClickUp light inbox row inside a bordered table group:
  * status · title · avatar · activity · count · date
@@ -286,6 +60,7 @@ export default function InboxNotificationRow({
   notification,
   count = 1,
   isClearedView = false,
+  isSelected = false,
   onActivate,
   onMarkUnread,
   onClear,
@@ -316,10 +91,11 @@ export default function InboxNotificationRow({
         'group flex w-full cursor-pointer items-center gap-3 px-4 py-3 text-left transition',
         'hover:bg-bg-weak-50',
         !isRead && 'bg-primary-alpha-10/10',
+        isSelected && 'bg-bg-weak-50 ring-1 ring-inset ring-stroke-soft-200',
       )}
     >
       <span className='flex size-5 shrink-0 items-center justify-center'>
-        <StatusIcon notification={notification} />
+        <TaskStatusGlyph status={resolveTaskStatusSnap(notification)} size={16} />
       </span>
 
       <span

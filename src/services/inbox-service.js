@@ -36,6 +36,36 @@ export async function getInboxNotifications({ filters = [], limit = 50, offset =
   }
 }
 
+export async function getTaskInboxNotifications({
+  task,
+  cleared = false,
+  limit = 100,
+  offset = 0,
+} = {}) {
+  try {
+    const result = await apiClient.get(`${INBOX_API}.get_task_notifications`, {
+      params: {
+        task,
+        cleared: cleared ? 1 : 0,
+        limit,
+        offset,
+      },
+    });
+    const { data, error } = unwrap(result, 'Failed to load task activity.');
+    if (error) return { error };
+    return {
+      notifications: Array.isArray(data?.notifications) ? data.notifications : [],
+      count: Number(data?.count) || 0,
+      hasMore: Boolean(data?.has_more),
+      task: data?.task || task || null,
+    };
+  } catch (error) {
+    return {
+      error: extractErrorMessage(error.serialized || error, 'Failed to load task activity.'),
+    };
+  }
+}
+
 export async function getInboxUnreadCount() {
   try {
     const result = await apiClient.get(`${INBOX_API}.get_unread_count`);
