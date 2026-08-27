@@ -1,4 +1,14 @@
-/* Boards inbox browser push service worker */
+/* Boards PWA + inbox push service worker */
+
+self.addEventListener('install', (event) => {
+  // Activate immediately so the page can become installable / receive push.
+  event.waitUntil(self.skipWaiting());
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(self.clients.claim());
+});
+
 self.addEventListener('push', (event) => {
   let data = {};
   try {
@@ -10,6 +20,8 @@ self.addEventListener('push', (event) => {
   const title = data.title || 'Boards';
   const options = {
     body: data.body || 'New notification',
+    icon: '/icons/icon-192.png',
+    badge: '/icons/favicon-32.png',
     data: {
       url: data.url || '/inbox',
     },
