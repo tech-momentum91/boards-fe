@@ -11,6 +11,7 @@ import { cn } from '@/utils/cn';
 import CircularProgress from '@/components/ui/circular-progress';
 import { getCategoryProgressPercentage } from '@/pages/boards/utils/task-statuses-utils';
 import { getNotificationActionPhrase } from './inbox-utils';
+import { buildBoardsNavigationPath } from '@/pages/boards/utils/boards-navigation';
 
 export type StatusSnap = {
   id?: string;
@@ -407,9 +408,56 @@ export function resolveInboxCommentId(notification?: InboxNotification | null): 
   return null;
 }
 
-export function buildInboxBreadcrumb(notification?: InboxNotification | null) {
+export type InboxBreadcrumb = {
+  key: string;
+  label: string;
+  path: string | null;
+};
+
+export function buildInboxBreadcrumb(notification?: InboxNotification | null): InboxBreadcrumb[] {
   if (!notification) return [];
-  return [notification.space_title, notification.folder_title, notification.list_title].filter(
-    Boolean,
-  ) as string[];
+
+  const crumbs: InboxBreadcrumb[] = [];
+
+  if (notification.space_title) {
+    crumbs.push({
+      key: 'space',
+      label: notification.space_title,
+      path: notification.space
+        ? buildBoardsNavigationPath({ id: notification.space, type: 'space' })
+        : null,
+    });
+  }
+
+  if (notification.folder_title) {
+    crumbs.push({
+      key: 'folder',
+      label: notification.folder_title,
+      path:
+        notification.folder && notification.space
+          ? buildBoardsNavigationPath({
+              id: notification.folder,
+              type: 'folder',
+              spaceId: notification.space,
+            })
+          : null,
+    });
+  }
+
+  if (notification.list_title) {
+    crumbs.push({
+      key: 'list',
+      label: notification.list_title,
+      path: notification.list
+        ? buildBoardsNavigationPath({
+            id: notification.list,
+            type: 'list',
+            spaceId: notification.space || undefined,
+            parentFolderId: notification.folder || undefined,
+          })
+        : null,
+    });
+  }
+
+  return crumbs;
 }

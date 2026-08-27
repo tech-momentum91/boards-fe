@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSelector } from 'react-redux';
+import { Link } from 'react-router-dom';
 import {
   RiArrowDownSLine,
   RiArrowGoBackLine,
@@ -22,6 +23,7 @@ import { getTaskInboxNotifications, markInboxRead } from '@/services/inbox-servi
 import { addBoardTaskComment, toggleBoardTaskCommentReaction, uploadBoardCommentAttachment } from '@/services/tasks-service';
 import BoardCommentComposer from '@/pages/boards/comments/BoardCommentComposer';
 import CommentReactionsBar from '@/pages/boards/components/comment-reactions-bar';
+import { buildBoardTaskSearchPath } from '@/pages/boards/utils/boards-global-search-utils';
 import {
   ActivityContent,
   CommentBody,
@@ -285,6 +287,18 @@ export default function InboxActivityPanel({
     [items],
   );
   const highlightName = seedNotification?.name || null;
+  const taskPath =
+    headerNotification?.task && headerNotification?.list
+      ? buildBoardTaskSearchPath(
+          {
+            id: headerNotification.task,
+            list: headerNotification.list,
+            space: headerNotification.space,
+            folder: headerNotification.folder,
+          },
+          sidebarTree,
+        )
+      : null;
 
   useEffect(() => {
     const requestId = ++requestIdRef.current;
@@ -460,16 +474,46 @@ export default function InboxActivityPanel({
         <div className='flex items-start gap-3 px-2 pb-4'>
           <div className='min-w-0 flex-1'>
             {crumbs.length ? (
-              <div className='mb-1 truncate text-[12px] text-[#7c828d]'>{crumbs.join(' / ')}</div>
+              <nav aria-label='Board location' className='mb-1 truncate text-[12px] text-[#7c828d]'>
+                {crumbs.map((crumb, index) => (
+                  <span key={crumb.key}>
+                    {index > 0 ? ' / ' : null}
+                    {crumb.path ? (
+                      <Link
+                        to={crumb.path}
+                        className='hover:text-[#292d34] hover:underline'
+                      >
+                        {crumb.label}
+                      </Link>
+                    ) : (
+                      crumb.label
+                    )}
+                  </span>
+                ))}
+              </nav>
             ) : null}
-            <div className='flex min-w-0 items-center gap-2'>
-              {headerNotification ? (
-                <TaskStatusGlyph status={resolveTaskStatusSnap(headerNotification)} size={18} />
-              ) : null}
-              <h2 className='min-w-0 truncate text-[18px] font-semibold leading-6 tracking-tight text-[#292d34]'>
-                {title}
-              </h2>
-            </div>
+            {taskPath ? (
+              <Link
+                to={taskPath}
+                className='flex min-w-0 items-center gap-2 rounded-sm outline-none hover:opacity-80 focus-visible:ring-2 focus-visible:ring-primary-base/40'
+              >
+                {headerNotification ? (
+                  <TaskStatusGlyph status={resolveTaskStatusSnap(headerNotification)} size={18} />
+                ) : null}
+                <h2 className='min-w-0 truncate text-[18px] font-semibold leading-6 tracking-tight text-[#292d34] hover:underline'>
+                  {title}
+                </h2>
+              </Link>
+            ) : (
+              <div className='flex min-w-0 items-center gap-2'>
+                {headerNotification ? (
+                  <TaskStatusGlyph status={resolveTaskStatusSnap(headerNotification)} size={18} />
+                ) : null}
+                <h2 className='min-w-0 truncate text-[18px] font-semibold leading-6 tracking-tight text-[#292d34]'>
+                  {title}
+                </h2>
+              </div>
+            )}
           </div>
 
           <div className='flex shrink-0 items-center gap-1 pt-0.5'>

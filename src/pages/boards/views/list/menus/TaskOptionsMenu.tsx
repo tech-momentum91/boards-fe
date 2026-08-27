@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useRef, useState } from 'react';
+import { forwardRef, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import {
   RiArchiveLine,
@@ -15,8 +15,8 @@ import {
   RiStarLine,
 } from 'react-icons/ri';
 import { cn } from '@/utils/cn';
-import InboxSnoozePopover from '@/pages/boards/inbox/InboxSnoozePopover';
-import useAnchoredMenuPosition from '../../../hooks/useAnchoredMenuPosition';
+import { InboxSnoozePanel } from '@/pages/boards/inbox/InboxSnoozePopover';
+import useAnchoredMenuPosition, { useAnchoredSubmenuPosition } from '../../../hooks/useAnchoredMenuPosition';
 import useHoverSubmenuController from '../../../hooks/useHoverSubmenuController';
 import TaskAddToMenu from './TaskAddToMenu';
 import TaskMoveToMenu from './TaskMoveToMenu';
@@ -48,6 +48,37 @@ MenuItem.displayName = 'MenuItem';
 
 const Divider = () => <div className='h-px w-full bg-stroke-soft-200' />;
 
+function TaskRemindInboxMenu({
+  anchorRef,
+  parentMenuRef,
+  panelRef,
+  panelHoverHandlers = {},
+  onSelect,
+}) {
+  const menuRef = useRef(null);
+  const { top, left, maxHeight } = useAnchoredSubmenuPosition(anchorRef, menuRef, parentMenuRef);
+
+  return (
+    <div
+      ref={(node) => {
+        menuRef.current = node;
+        if (panelRef) {
+          panelRef.current = node;
+        }
+      }}
+      {...panelHoverHandlers}
+      className='fixed z-[60] w-[320px] overflow-y-auto rounded-2xl border border-stroke-soft-200 bg-bg-white-0 shadow-[0px_16px_40px_-8px_rgba(88,92,95,0.16)]'
+      style={{
+        top,
+        left,
+        maxHeight: maxHeight ? `${maxHeight}px` : 'calc(100vh - 16px)',
+      }}
+    >
+      <InboxSnoozePanel onSelect={onSelect} />
+    </div>
+  );
+}
+
 export default function TaskOptionsMenu({
   anchorRef,
   onClose,
@@ -69,14 +100,16 @@ export default function TaskOptionsMenu({
   const menuRef = useRef(null);
   const moveToRef = useRef(null);
   const addToRef = useRef(null);
+  const remindRef = useRef(null);
   const moveSubmenuRef = useRef(null);
   const addSubmenuRef = useRef(null);
-  const [remindOpen, setRemindOpen] = useState(false);
+  const remindSubmenuRef = useRef(null);
   const { closeSubmenu, getItemHandlers, getPanelHandlers, isOpen } = useHoverSubmenuController();
   const { top, left, maxHeight } = useAnchoredMenuPosition(anchorRef, menuRef);
 
   const showMoveToMenu = isOpen('move');
   const showAddToMenu = isOpen('add');
+  const showRemindMenu = isOpen('remind');
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -86,7 +119,11 @@ export default function TaskOptionsMenu({
         menuRef.current?.contains(target) ||
         anchorRef?.current?.contains(target) ||
         moveSubmenuRef.current?.contains(target) ||
-        addSubmenuRef.current?.contains(target)
+        addSubmenuRef.current?.contains(target) ||
+        remindSubmenuRef.current?.contains(target) ||
+        target?.closest?.(
+          '[data-radix-popper-content-wrapper], [data-radix-select-content], [data-radix-popover-content]',
+        )
       ) {
         return;
       }
@@ -128,7 +165,7 @@ export default function TaskOptionsMenu({
   };
 
   const handleRemindSelect = (remindAt) => {
-    setRemindOpen(false);
+    closeSubmenu();
     onClose?.();
     onRemindInbox?.(remindAt);
   };
@@ -160,20 +197,14 @@ export default function TaskOptionsMenu({
           label='Unfollow Task'
           onClick={() => handleAction(onUnfollow)}
         />
-        <InboxSnoozePopover
-          open={remindOpen}
-          onOpenChange={setRemindOpen}
-          onSelect={handleRemindSelect}
-        >
-          <div>
-            <MenuItem
-              icon={RiInbox2Line}
-              label='Remind Me Inbox'
-              hasSubmenu
-              onClick={() => setRemindOpen(true)}
-            />
-          </div>
-        </InboxSnoozePopover>
+        <MenuItem
+          ref={remindRef}
+          icon={RiInbox2Line}
+          label='Remind Me Inbox'
+          hasSubmenu
+          active={showRemindMenu}
+          hoverHandlers={getItemHandlers('remind')}
+        />
 
         <Divider />
 
@@ -234,6 +265,16 @@ export default function TaskOptionsMenu({
           currentListId={currentListId}
           sidebarTree={sidebarTree}
           onAddSuccess={handleAddSuccess}
+        />
+      ) : null}
+
+      {showRemindMenu ? (
+        <TaskRemindInboxMenu
+          anchorRef={remindRef}
+          parentMenuRef={menuRef}
+          panelRef={remindSubmenuRef}
+          panelHoverHandlers={getPanelHandlers('remind')}
+          onSelect={handleRemindSelect}
         />
       ) : null}
     </>,
