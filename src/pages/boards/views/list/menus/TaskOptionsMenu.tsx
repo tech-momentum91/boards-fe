@@ -8,6 +8,7 @@ import {
   RiInbox2Line,
   RiLayoutColumnLine,
   RiLogoutBoxRLine,
+  RiNotification3Line,
   RiNotificationOffLine,
   RiPencilLine,
   RiPlayListAddLine,
@@ -91,7 +92,7 @@ export default function TaskOptionsMenu({
   onRename,
   onAddColumn,
   onFavorite,
-  onUnfollow,
+  onToggleWatch,
   onRemindInbox,
   onDuplicate,
   onDelete,
@@ -193,9 +194,9 @@ export default function TaskOptionsMenu({
           onClick={() => handleAction(onFavorite)}
         />
         <MenuItem
-          icon={RiNotificationOffLine}
-          label='Unfollow Task'
-          onClick={() => handleAction(onUnfollow)}
+          icon={task?.isWatching ? RiNotificationOffLine : RiNotification3Line}
+          label={task?.isWatching ? 'Unfollow Task' : 'Follow Task'}
+          onClick={() => handleAction(onToggleWatch)}
         />
         <MenuItem
           ref={remindRef}

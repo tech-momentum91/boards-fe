@@ -8,8 +8,9 @@ import {
   RiArrowLeftSLine,
   RiArrowUpSLine,
   RiCheckLine,
-  RiLayoutRightLine,
+  RiExternalLinkLine,
   RiLoader4Line,
+  RiNotification3Line,
   RiNotificationOffLine,
   RiTimeLine,
 } from 'react-icons/ri';
@@ -49,7 +50,7 @@ type InboxActivityPanelProps = {
   onClear: (names: string[]) => void | Promise<void>;
   onUnclear: (names: string[]) => void | Promise<void>;
   onSnooze: (snoozedUntil: string, names: string[]) => void | Promise<void>;
-  onMute: (taskId: string) => Promise<{ error?: string } | void>;
+  onMute: (taskId: string, shouldMute: boolean) => Promise<{ error?: string } | void>;
   onOpenTask: (notification: InboxNotification) => void;
   onMarkedRead?: (names: string[]) => void;
   sidebarTree?: unknown[];
@@ -270,10 +271,12 @@ export default function InboxActivityPanel({
   const [busy, setBusy] = useState(false);
   const [snoozeOpen, setSnoozeOpen] = useState(false);
   const [muted, setMuted] = useState(false);
+  const [muteKnown, setMuteKnown] = useState(false);
   const [replyingToName, setReplyingToName] = useState<string | null>(null);
   const [isSubmittingReply, setIsSubmittingReply] = useState(false);
   const requestIdRef = useRef(0);
   const isSubmittingReplyRef = useRef(false);
+  const muteInFlightRef = useRef(false);
   const composerRef = useRef<{ focus?: () => void } | null>(null);
 
   const headerNotification = items[0] || seedNotification;
@@ -315,6 +318,14 @@ export default function InboxActivityPanel({
       }
       const nextItems = result.notifications || [];
       setItems(nextItems);
+      if (typeof result.isMuted === 'boolean') {
+        setMuted(result.isMuted);
+        setMuteKnown(true);
+      } else if (typeof result.isWatching === 'boolean') {
+        // Older backends: approximate mute from watching.
+        setMuted(!result.isWatching);
+        setMuteKnown(true);
+      }
 
       const unreadNames = nextItems
         .filter((item) => !item.is_read)
@@ -339,10 +350,12 @@ export default function InboxActivityPanel({
 
   useEffect(() => {
     setMuted(false);
+    setMuteKnown(false);
     setSnoozeOpen(false);
     setReplyingToName(null);
     setIsSubmittingReply(false);
     isSubmittingReplyRef.current = false;
+    muteInFlightRef.current = false;
   }, [taskId]);
 
   useEffect(() => {
@@ -375,13 +388,16 @@ export default function InboxActivityPanel({
     }
   };
 
-  const handleMute = async () => {
-    if (busy || muted || !taskId) return;
+  const handleMuteToggle = async () => {
+    if (busy || muteInFlightRef.current || !taskId || !muteKnown) return;
+    const shouldMute = !muted;
+    muteInFlightRef.current = true;
     setBusy(true);
     try {
-      const result = await onMute(taskId);
-      if (!result?.error) setMuted(true);
+      const result = await onMute(taskId, shouldMute);
+      if (!result?.error) setMuted(shouldMute);
     } finally {
+      muteInFlightRef.current = false;
       setBusy(false);
     }
   };
@@ -518,11 +534,15 @@ export default function InboxActivityPanel({
 
           <div className='flex shrink-0 items-center gap-1 pt-0.5'>
             <IconGhostButton
-              title={muted ? 'Notifications muted' : 'Mute notifications for this task'}
-              onClick={handleMute}
-              disabled={busy || muted}
+              title={
+                muted
+                  ? 'Unmute notifications for this task'
+                  : 'Mute notifications for this task'
+              }
+              onClick={handleMuteToggle}
+              disabled={busy || !muteKnown}
             >
-              <RiNotificationOffLine size={16} />
+              {muted ? <RiNotificationOffLine size={16} /> : <RiNotification3Line size={16} />}
             </IconGhostButton>
 
             <InboxSnoozePopover
@@ -550,7 +570,7 @@ export default function InboxActivityPanel({
                 onClick={() => onOpenTask(headerNotification)}
                 className='ml-1 inline-flex h-8 items-center gap-1.5 rounded-md border border-[#d6d9de] bg-bg-white-0 px-2.5 text-[13px] font-medium text-[#292d34] transition hover:bg-[#eef0f3]'
               >
-                <RiLayoutRightLine size={15} className='text-[#7c828d]' />
+                <RiExternalLinkLine size={15} className='text-[#7c828d]' />
                 Details
               </button>
             ) : null}

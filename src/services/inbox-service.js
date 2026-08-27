@@ -58,6 +58,14 @@ export async function getTaskInboxNotifications({
       count: Number(data?.count) || 0,
       hasMore: Boolean(data?.has_more),
       task: data?.task || task || null,
+      isMuted:
+        data?.is_muted === undefined || data?.is_muted === null
+          ? null
+          : data?.is_muted === true || data?.is_muted === 1 || data?.is_muted === '1',
+      isWatching:
+        data?.is_watching === undefined || data?.is_watching === null
+          ? null
+          : data?.is_watching === true || data?.is_watching === 1 || data?.is_watching === '1',
     };
   } catch (error) {
     return {
@@ -165,6 +173,45 @@ export async function unfollowBoardTask(taskId) {
   } catch (error) {
     return {
       error: extractErrorMessage(error.serialized || error, 'Failed to unfollow task.'),
+    };
+  }
+}
+
+export async function followBoardTask(taskId) {
+  try {
+    const result = await apiClient.post(`${INBOX_API}.follow_task`, {
+      task_id: taskId,
+    });
+    return unwrap(result, 'Failed to follow task.');
+  } catch (error) {
+    return {
+      error: extractErrorMessage(error.serialized || error, 'Failed to follow task.'),
+    };
+  }
+}
+
+export async function muteBoardTask(taskId) {
+  try {
+    const result = await apiClient.post(`${INBOX_API}.mute_task`, {
+      task_id: taskId,
+    });
+    return unwrap(result, 'Failed to mute task.');
+  } catch (error) {
+    return {
+      error: extractErrorMessage(error.serialized || error, 'Failed to mute task.'),
+    };
+  }
+}
+
+export async function unmuteBoardTask(taskId) {
+  try {
+    const result = await apiClient.post(`${INBOX_API}.unmute_task`, {
+      task_id: taskId,
+    });
+    return unwrap(result, 'Failed to unmute task.');
+  } catch (error) {
+    return {
+      error: extractErrorMessage(error.serialized || error, 'Failed to unmute task.'),
     };
   }
 }

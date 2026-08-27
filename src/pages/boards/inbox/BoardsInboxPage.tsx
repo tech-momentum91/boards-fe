@@ -35,7 +35,8 @@ import {
   markInboxUnread,
   snoozeInboxNotification,
   unclearInboxNotifications,
-  unfollowBoardTask,
+  muteBoardTask,
+  unmuteBoardTask,
 } from '@/services/inbox-service';
 import { ensureBoardPushSubscription, getBoardPushPermission } from '@/services/board-push';
 import InboxNotificationRow from './InboxNotificationRow';
@@ -447,14 +448,16 @@ export default function BoardsInboxPage() {
     }
   };
 
-  const handleActivityMute = async (taskId) => {
+  const handleActivityMuteToggle = async (taskId, shouldMute) => {
     if (!taskId) return { error: 'Task is required' };
-    const result = await unfollowBoardTask(taskId);
+    const result = shouldMute ? await muteBoardTask(taskId) : await unmuteBoardTask(taskId);
     if (result.error) {
       showErrorToast(result.error);
       return { error: result.error };
     }
-    showSuccessToast('Muted notifications for this task');
+    showSuccessToast(
+      shouldMute ? 'Muted notifications for this task' : 'Unmuted notifications for this task',
+    );
     return {};
   };
 
@@ -766,7 +769,7 @@ export default function BoardsInboxPage() {
                 onClear={handleActivityClear}
                 onUnclear={handleActivityUnclear}
                 onSnooze={handleActivitySnooze}
-                onMute={handleActivityMute}
+                onMute={handleActivityMuteToggle}
                 onOpenTask={handleOpenTaskFromActivity}
                 sidebarTree={sidebarTree}
                 onMarkedRead={(names) => {
