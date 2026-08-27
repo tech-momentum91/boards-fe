@@ -85,46 +85,44 @@ export default function BoardPushPermissionBanner() {
   };
 
   return (
-    <div className='pointer-events-none fixed inset-x-0 bottom-4 z-[100] flex justify-center px-4'>
-      <div className='pointer-events-auto flex w-full max-w-lg items-start gap-3 rounded-2xl border border-stroke-soft-200 bg-bg-white-0 p-3.5 shadow-[0px_16px_40px_-8px_rgba(88,92,95,0.2)]'>
-        <span className='mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-full bg-primary-alpha-10 text-primary-base'>
-          <RiNotification3Line size={18} />
-        </span>
-        <div className='min-w-0 flex-1'>
-          <p className='text-sm font-medium text-text-main-900'>Turn on notifications</p>
-          <p className='mt-0.5 text-[13px] leading-5 text-text-sub-600'>
-            Get alerts for mentions, assignments, and updates — even when Boards is in the
-            background.
-          </p>
-          <div className='mt-2.5 flex flex-wrap items-center gap-2'>
-            <button
-              type='button'
-              disabled={busy}
-              onClick={handleEnable}
-              className='rounded-lg bg-primary-base px-3 py-1.5 text-[13px] font-medium text-static-white transition hover:opacity-90 disabled:opacity-50'
-            >
-              {busy ? 'Enabling…' : 'Enable'}
-            </button>
-            <button
-              type='button'
-              disabled={busy}
-              onClick={dismiss}
-              className='rounded-lg px-3 py-1.5 text-[13px] font-medium text-text-sub-600 transition hover:bg-bg-weak-50 disabled:opacity-50'
-            >
-              Not now
-            </button>
-          </div>
+    <div className='pointer-events-auto flex w-full max-w-lg items-start gap-3 rounded-2xl border border-stroke-soft-200 bg-bg-white-0 p-3.5 shadow-[0px_16px_40px_-8px_rgba(88,92,95,0.2)]'>
+      <span className='mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-full bg-primary-alpha-10 text-primary-base'>
+        <RiNotification3Line size={18} />
+      </span>
+      <div className='min-w-0 flex-1'>
+        <p className='text-sm font-medium text-text-main-900'>Turn on notifications</p>
+        <p className='mt-0.5 text-[13px] leading-5 text-text-sub-600'>
+          Get alerts for mentions, assignments, and updates — even when Boards is in the
+          background.
+        </p>
+        <div className='mt-2.5 flex flex-wrap items-center gap-2'>
+          <button
+            type='button'
+            disabled={busy}
+            onClick={handleEnable}
+            className='rounded-lg bg-primary-base px-3 py-1.5 text-[13px] font-medium text-static-white transition hover:opacity-90 disabled:opacity-50'
+          >
+            {busy ? 'Enabling…' : 'Enable'}
+          </button>
+          <button
+            type='button'
+            disabled={busy}
+            onClick={dismiss}
+            className='rounded-lg px-3 py-1.5 text-[13px] font-medium text-text-sub-600 transition hover:bg-bg-weak-50 disabled:opacity-50'
+          >
+            Not now
+          </button>
         </div>
-        <button
-          type='button'
-          aria-label='Dismiss'
-          disabled={busy}
-          onClick={dismiss}
-          className='rounded-md p-1 text-icon-sub-500 transition hover:bg-bg-weak-50 hover:text-text-main-900 disabled:opacity-50'
-        >
-          <RiCloseLine size={16} />
-        </button>
       </div>
+      <button
+        type='button'
+        aria-label='Dismiss'
+        disabled={busy}
+        onClick={dismiss}
+        className='rounded-md p-1 text-icon-sub-500 transition hover:bg-bg-weak-50 hover:text-text-main-900 disabled:opacity-50'
+      >
+        <RiCloseLine size={16} />
+      </button>
     </div>
   );
 }

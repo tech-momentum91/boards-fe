@@ -6,6 +6,7 @@ import {
   getBoardPushPublicKey,
   subscribeBoardPush,
 } from '@/services/inbox-service';
+import { registerBoardServiceWorker } from '@/services/board-pwa';
 
 function urlBase64ToUint8Array(base64String) {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
@@ -49,8 +50,10 @@ export async function ensureBoardPushSubscription() {
     return { skipped: true, reason: 'no_vapid' };
   }
 
-  const registration = await navigator.serviceWorker.register('/board-sw.js');
-  await navigator.serviceWorker.ready;
+  const registration = await registerBoardServiceWorker();
+  if (!registration) {
+    return { skipped: true, reason: 'unsupported' };
+  }
 
   let subscription = await registration.pushManager.getSubscription();
   if (!subscription) {

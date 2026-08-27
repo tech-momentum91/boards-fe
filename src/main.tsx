@@ -7,6 +7,7 @@ import { store } from '@/redux/store';
 import { AuthProvider } from '@/contexts/auth-context';
 import { InboxSyncProvider } from '@/contexts/inbox-sync-context';
 import BoardPushPermissionBanner from '@/components/board-push-permission-banner';
+import BoardPwaInstallBanner from '@/components/board-pwa-install-banner';
 import { Toaster } from '@/components/ui/toast';
 import routes from './routes';
 import { TooltipProvider } from '@radix-ui/react-tooltip';
@@ -41,7 +42,10 @@ function Root() {
               <Suspense fallback={<LoadingFallback />}>
                 <AppRoutes />
               </Suspense>
-              <BoardPushPermissionBanner />
+              <div className='pointer-events-none fixed inset-x-0 bottom-4 z-[100] flex flex-col items-center gap-2 px-4'>
+                <BoardPwaInstallBanner />
+                <BoardPushPermissionBanner />
+              </div>
               <Toaster />
             </InboxSyncProvider>
           </AuthProvider>
