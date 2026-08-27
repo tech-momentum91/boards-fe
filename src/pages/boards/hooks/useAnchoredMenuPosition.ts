@@ -84,11 +84,13 @@ export function computeAnchoredSubmenuPosition(anchorRect, submenuEl, parentMenu
   top = Math.max(padding, top);
   left = Math.max(padding, left);
 
-  return { top, left };
+  const maxHeight = window.innerHeight - padding * 2;
+
+  return { top, left, maxHeight };
 }
 
 export function useAnchoredSubmenuPosition(anchorRef, submenuRef, parentMenuRef) {
-  const [position, setPosition] = useState({ top: 0, left: 0 });
+  const [position, setPosition] = useState({ top: 0, left: 0, maxHeight: undefined });
 
   useLayoutEffect(() => {
     const updatePosition = () => {

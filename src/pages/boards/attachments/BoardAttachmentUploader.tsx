@@ -157,21 +157,36 @@ export default function BoardAttachmentUploader({
     handleFiles(event.dataTransfer.files);
   };
 
+  const openFilePicker = () => {
+    if (!disabled) {
+      inputRef.current?.click();
+    }
+  };
+
   return (
     <div className={cn('flex flex-col gap-2', className)}>
-      {/* Drop zone — drag events on the whole box; only the button opens the picker */}
+      {/* Drop zone — whole area is clickable; Browse is an explicit affordance */}
       <div
-        aria-label='File drop zone'
+        role='button'
+        tabIndex={disabled ? -1 : 0}
+        aria-label='File drop zone. Click or press Enter to browse files.'
         onDragEnter={onDragEnter}
         onDragOver={onDragOver}
         onDragLeave={onDragLeave}
         onDrop={onDrop}
+        onClick={openFilePicker}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            openFilePicker();
+          }
+        }}
         className={cn(
-          'flex items-center justify-between gap-4 rounded-xl border border-dashed px-4 py-3 transition-colors duration-150',
+          'flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-dashed px-4 py-3 transition-colors duration-150',
           isDragging
             ? 'border-primary-base bg-primary-50'
             : 'border-stroke-soft-200 bg-transparent',
-          disabled && 'pointer-events-none opacity-50',
+          disabled && 'pointer-events-none cursor-not-allowed opacity-50',
         )}
       >
         {/* Left: icon + text */}
@@ -197,7 +212,10 @@ export default function BoardAttachmentUploader({
         <button
           type='button'
           disabled={disabled}
-          onClick={() => inputRef.current?.click()}
+          onClick={(event) => {
+            event.stopPropagation();
+            openFilePicker();
+          }}
           className='shrink-0 rounded-lg border border-stroke-soft-200 bg-white px-3 py-1.5 text-paragraph-sm text-text-sub-600 transition-colors hover:border-stroke-sub-300 hover:bg-bg-weak-100 disabled:opacity-50'
         >
           Browse File
@@ -212,7 +230,6 @@ export default function BoardAttachmentUploader({
         disabled={disabled}
         onChange={onInputChange}
         className='sr-only'
-        aria-hidden
         tabIndex={-1}
       />
 

@@ -204,6 +204,10 @@ function parseIsFavorite(value) {
   return value === true || value === 1 || value === '1';
 }
 
+function parseIsWatching(value) {
+  return value === true || value === 1 || value === '1';
+}
+
 function parseIsDraft(value) {
   return value === true || value === 1 || value === '1';
 }
@@ -276,6 +280,7 @@ export function normalizeListTask(task = {}) {
       parseIsClosed(task.is_closed ?? task.isClosed) || isClosedStatusCategory(statusCategory),
     isArchived: parseIsArchived(task.is_archived ?? task.isArchived),
     isFavorite: parseIsFavorite(task.is_favorite ?? task.isFavorite),
+    isWatching: parseIsWatching(task.is_watching ?? task.isWatching),
     isDraft: parseIsDraft(task.is_draft ?? task.isDraft),
     listId: task.list_id ?? task.listId ?? task.list ?? '',
     createdBy,
@@ -380,6 +385,7 @@ export function applyBoardTaskDetailToListTask(detail = {}, listTask = {}) {
     isArchived: detail.isArchived ?? listTask.isArchived,
     isClosed: detail.isClosed ?? listTask.isClosed,
     isFavorite: detail.isFavorite ?? listTask.isFavorite,
+    isWatching: detail.isWatching ?? listTask.isWatching,
     isDraft: detail.isDraft ?? listTask.isDraft,
     createdBy: detail.createdBy ?? listTask.createdBy,
     createdByDetails: detail.createdByDetails ?? listTask.createdByDetails,
@@ -1104,9 +1110,7 @@ export async function uploadTaskAttachment({ taskId, file, createRecord = true }
     formData.append('task_id', taskId);
     formData.append('create_record', createRecord ? '1' : '0');
 
-    const response = await apiClient.post(UPLOAD_ATTACHMENT_ENDPOINT, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    const response = await apiClient.post(UPLOAD_ATTACHMENT_ENDPOINT, formData);
 
     const result = response.data;
     const responseError = getFrappeResponseError(result, 'Failed to upload attachment.');

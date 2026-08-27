@@ -67,7 +67,7 @@ import {
   buildTaskFieldUpdatePayload,
   normalizeListTask,
 } from '@/services/tasks-service';
-import { showErrorToast, showSuccessToast } from '@/utils/error-utils';
+import { createInboxReminder, followBoardTask, unfollowBoardTask } from '@/services/inbox-service';
 import { getAssigneeDisplayName, getAssigneeFirstNameInitial, appendUniqueTags, parseCommaSeparatedTags } from '@/utils/task-utils';
 import { CrmAccountAvatar } from '@/components/crm-accounts/crm-account-avatar';
 import { selectUserSearch } from '@/redux/userSlice';
@@ -1635,6 +1635,8 @@ function TaskRowActions({
   onStartRename,
   onArchive,
   onFavorite,
+  onToggleWatch,
+  onRemindInbox,
   onDuplicate,
   onDelete,
   isTableLayout = false,
@@ -1689,6 +1691,8 @@ function TaskRowActions({
           onRename={() => onStartRename?.(task.id)}
           onArchive={() => onArchive?.(task.id)}
           onFavorite={() => onFavorite?.(task.id)}
+          onToggleWatch={() => onToggleWatch?.(task.id)}
+          onRemindInbox={(remindAt) => onRemindInbox?.(task.id, remindAt)}
           onDuplicate={() => onDuplicate?.(task.id)}
           onDelete={() => onDelete?.(task.id)}
         />
@@ -2340,6 +2344,7 @@ export default function BoardTaskView({
   const revealedGroupKeysRef = useRef([]);
   const collapsedGroupsRef = useRef({});
   const tasksRef = useRef([]);
+  const watchToggleInFlightRef = useRef(new Set());
   const listColumnsRef = useRef([]);
   const groupByRef = useRef(null);
   const statusGroupsRef = useRef([]);
@@ -4627,6 +4632,43 @@ export default function BoardTaskView({
     [onFavoriteTasksChange, tasks],
   );
 
+  const handleToggleWatchTask = useCallback(async (taskId) => {
+    setOpenTaskMenuId(null);
+    if (!taskId || watchToggleInFlightRef.current.has(taskId)) return;
+
+    const task = tasksRef.current.find((item) => item.id === taskId);
+    if (!task) return;
+
+    const nextWatching = !task.isWatching;
+    watchToggleInFlightRef.current.add(taskId);
+    try {
+      const result = nextWatching ? await followBoardTask(taskId) : await unfollowBoardTask(taskId);
+      if (result.error) {
+        showErrorToast(result.error);
+        return;
+      }
+
+      setTasks((previous) =>
+        previous.map((item) => (item.id === taskId ? { ...item, isWatching: nextWatching } : item)),
+      );
+      showSuccessToast(nextWatching ? 'Following task' : 'Unfollowed task');
+    } finally {
+      watchToggleInFlightRef.current.delete(taskId);
+    }
+  }, []);
+
+  const handleRemindInbox = useCallback(async (taskId, remindAt) => {
+    setOpenTaskMenuId(null);
+    if (!taskId || !remindAt) return;
+
+    const result = await createInboxReminder(taskId, remindAt);
+    if (result.error) {
+      showErrorToast(result.error);
+      return;
+    }
+    showSuccessToast('Reminder set');
+  }, []);
+
   const handleRequestDeleteTask = useCallback(
     (taskId) => {
       setOpenTaskMenuId(null);
@@ -5413,6 +5455,8 @@ export default function BoardTaskView({
       onStartRename: canEditTasks ? handleStartRename : undefined,
       onArchive: canEditTasks ? handleArchiveTask : undefined,
       onFavorite: handleFavoriteTask,
+      onToggleWatch: handleToggleWatchTask,
+      onRemindInbox: handleRemindInbox,
       onDuplicate: canCreateTasks ? handleDuplicateTask : undefined,
       onDelete: canDeleteTasks ? handleRequestDeleteTask : undefined,
     }),
@@ -5421,6 +5465,8 @@ export default function BoardTaskView({
       handleArchiveTask,
       handleDuplicateTask,
       handleFavoriteTask,
+      handleToggleWatchTask,
+      handleRemindInbox,
       handleRequestDeleteTask,
       handleStartRename,
       handleTaskAdded,
@@ -5474,6 +5520,8 @@ export default function BoardTaskView({
           onStartRename={canEditTasks ? handleStartRename : undefined}
           onArchive={canEditTasks ? handleArchiveTask : undefined}
           onFavorite={handleFavoriteTask}
+          onToggleWatch={handleToggleWatchTask}
+          onRemindInbox={handleRemindInbox}
           onDuplicate={canCreateTasks ? handleDuplicateTask : undefined}
           onDelete={canDeleteTasks ? handleRequestDeleteTask : undefined}
         />

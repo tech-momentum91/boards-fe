@@ -40,11 +40,27 @@ if (!resolveApiOrigin()) {
 apiClient.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
     if (config.data instanceof FormData) {
-      delete config.headers['Content-Type'];
+      // AxiosHeaders: plain `delete` on the proxy can leave application/json set,
+      // which breaks multipart uploads (browser never adds the boundary).
+      const headers = config.headers as {
+        delete?: (name: string) => void;
+        set?: (name: string, value: string | false) => void;
+      };
+      if (typeof headers?.delete === 'function') {
+        headers.delete('Content-Type');
+      } else {
+        delete config.headers['Content-Type'];
+      }
+      if (typeof headers?.set === 'function') {
+        headers.set('Content-Type', false);
+      }
     }
 
     if (UNSAFE_METHODS.has((config.method ?? '').toLowerCase())) {
-      const token = getCachedCsrfToken();
+      let token = getCachedCsrfToken();
+      if (!token) {
+        token = await fetchCsrfToken();
+      }
       if (token) {
         config.headers['X-Frappe-CSRF-Token'] = token;
       }

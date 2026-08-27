@@ -21,6 +21,7 @@ import {
   isBefore,
   isToday,
   isValid,
+  isYesterday,
   parse,
   parseISO,
   setDate,
@@ -326,6 +327,7 @@ export const formatDateWithOrdinal = (input) => {
 /** Section keys for inbox grouping by date */
 export const INBOX_SECTION_KEYS = {
   TODAY: 'today',
+  YESTERDAY: 'yesterday',
   LAST_7_DAYS: 'last7days',
   EARLIER_THIS_MONTH: 'earlierThisMonth',
 };
@@ -362,6 +364,7 @@ export const getInboxSectionOrder = () => {
   const currentMonth = getMonth(now);
   const sections = [
     { key: INBOX_SECTION_KEYS.TODAY, label: 'Today' },
+    { key: INBOX_SECTION_KEYS.YESTERDAY, label: 'Yesterday' },
     { key: INBOX_SECTION_KEYS.LAST_7_DAYS, label: 'Last 7 days' },
     { key: INBOX_SECTION_KEYS.EARLIER_THIS_MONTH, label: 'Earlier this month' },
   ];
@@ -383,6 +386,7 @@ export const getInboxSectionOrder = () => {
  */
 export const getInboxSectionLabel = (sectionKey) => {
   if (sectionKey === INBOX_SECTION_KEYS.TODAY) return 'Today';
+  if (sectionKey === INBOX_SECTION_KEYS.YESTERDAY) return 'Yesterday';
   if (sectionKey === INBOX_SECTION_KEYS.LAST_7_DAYS) return 'Last 7 days';
   if (sectionKey === INBOX_SECTION_KEYS.EARLIER_THIS_MONTH) return 'Earlier this month';
   if (sectionKey.startsWith(INBOX_SECTION_MONTH_PREFIX)) {
@@ -417,6 +421,7 @@ export const getInboxSection = (input) => {
   const currentMonth = getMonth(now);
 
   if (isToday(date)) return INBOX_SECTION_KEYS.TODAY;
+  if (isYesterday(date)) return INBOX_SECTION_KEYS.YESTERDAY;
   if (isBefore(date, todayStart) && !isBefore(date, sevenDaysAgoStart))
     return INBOX_SECTION_KEYS.LAST_7_DAYS;
   if (isBefore(date, sevenDaysAgoStart) && !isBefore(date, monthStart))
@@ -435,7 +440,7 @@ export const formatInboxDateTime = (input) => {
   const date = parseToDate(input);
   if (!date) return '';
   if (isToday(date)) return format(date, 'h:mm a');
-  return format(date, 'do MMM yy');
+  return format(date, 'MMM d');
 };
 
 /**
