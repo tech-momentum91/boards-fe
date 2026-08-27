@@ -204,6 +204,10 @@ function parseIsFavorite(value) {
   return value === true || value === 1 || value === '1';
 }
 
+function parseIsWatching(value) {
+  return value === true || value === 1 || value === '1';
+}
+
 function parseIsDraft(value) {
   return value === true || value === 1 || value === '1';
 }
@@ -276,6 +280,7 @@ export function normalizeListTask(task = {}) {
       parseIsClosed(task.is_closed ?? task.isClosed) || isClosedStatusCategory(statusCategory),
     isArchived: parseIsArchived(task.is_archived ?? task.isArchived),
     isFavorite: parseIsFavorite(task.is_favorite ?? task.isFavorite),
+    isWatching: parseIsWatching(task.is_watching ?? task.isWatching),
     isDraft: parseIsDraft(task.is_draft ?? task.isDraft),
     listId: task.list_id ?? task.listId ?? task.list ?? '',
     createdBy,
@@ -380,6 +385,7 @@ export function applyBoardTaskDetailToListTask(detail = {}, listTask = {}) {
     isArchived: detail.isArchived ?? listTask.isArchived,
     isClosed: detail.isClosed ?? listTask.isClosed,
     isFavorite: detail.isFavorite ?? listTask.isFavorite,
+    isWatching: detail.isWatching ?? listTask.isWatching,
     isDraft: detail.isDraft ?? listTask.isDraft,
     createdBy: detail.createdBy ?? listTask.createdBy,
     createdByDetails: detail.createdByDetails ?? listTask.createdByDetails,

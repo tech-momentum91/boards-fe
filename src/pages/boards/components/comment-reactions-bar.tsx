@@ -115,6 +115,7 @@ export default function CommentReactionsBar({
   onToggleReaction,
   disabled = false,
   readOnly = false,
+  className,
 }) {
   const [isUpdating, setIsUpdating] = useState(false);
 
@@ -151,7 +152,12 @@ export default function CommentReactionsBar({
 
   return (
     <Tooltip.Provider delayDuration={200}>
-      <div className='mt-2 flex flex-wrap items-center gap-1.5 border-t border-stroke-soft-200 pt-2'>
+      <div
+        className={cn(
+          'mt-2 flex flex-wrap items-center gap-1.5 border-t border-stroke-soft-200 pt-2',
+          className,
+        )}
+      >
         {!readOnly || thumbsUpReaction ? (
           <ThumbsUpButton
             reaction={thumbsUpReaction}

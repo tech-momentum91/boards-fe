@@ -16,6 +16,8 @@ interface CalendarTaskMenuProps {
   onStartRename?: (taskId: string | undefined) => void;
   onArchive?: (taskId: string | undefined) => void;
   onFavorite?: (taskId: string | undefined) => void;
+  onToggleWatch?: (taskId: string | undefined) => void;
+  onRemindInbox?: (taskId: string | undefined, remindAt: string) => void;
   onDuplicate?: (taskId: string | undefined) => void;
   onDelete?: (taskId: string | undefined) => void;
 }
@@ -148,6 +150,8 @@ export default function BoardCalendarTaskRow({
           onRename={() => taskMenuProps.onStartRename?.(task.id)}
           onArchive={() => taskMenuProps.onArchive?.(task.id)}
           onFavorite={() => taskMenuProps.onFavorite?.(task.id)}
+          onToggleWatch={() => taskMenuProps.onToggleWatch?.(task.id)}
+          onRemindInbox={(remindAt) => taskMenuProps.onRemindInbox?.(task.id, remindAt)}
           onDuplicate={() => taskMenuProps.onDuplicate?.(task.id)}
           onDelete={() => taskMenuProps.onDelete?.(task.id)}
         />

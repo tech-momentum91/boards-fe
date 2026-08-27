@@ -5,6 +5,8 @@ import { BrowserRouter, useRoutes } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import { store } from '@/redux/store';
 import { AuthProvider } from '@/contexts/auth-context';
+import { InboxSyncProvider } from '@/contexts/inbox-sync-context';
+import BoardPushPermissionBanner from '@/components/board-push-permission-banner';
 import { Toaster } from '@/components/ui/toast';
 import routes from './routes';
 import { TooltipProvider } from '@radix-ui/react-tooltip';
@@ -35,10 +37,13 @@ function Root() {
       <TooltipProvider>
         <BrowserRouter>
           <AuthProvider>
-            <Suspense fallback={<LoadingFallback />}>
-              <AppRoutes />
-            </Suspense>
-            <Toaster />
+            <InboxSyncProvider>
+              <Suspense fallback={<LoadingFallback />}>
+                <AppRoutes />
+              </Suspense>
+              <BoardPushPermissionBanner />
+              <Toaster />
+            </InboxSyncProvider>
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>

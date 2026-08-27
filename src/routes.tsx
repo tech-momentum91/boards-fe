@@ -1,5 +1,5 @@
 import { lazy, type ReactElement } from 'react';
-import { Navigate, type RouteObject } from 'react-router-dom';
+import { Navigate, useParams, type RouteObject } from 'react-router-dom';
 import ProtectedRoute from '@/route-protection/protected-route';
 import RootRedirect from '@/route-protection/root-redirect';
 
@@ -18,6 +18,11 @@ const protectedBoardsRoute = (element: ReactElement) => (
   <ProtectedRoute>{element}</ProtectedRoute>
 );
 
+function BoardsInboxLegacyRedirect() {
+  const { taskId } = useParams();
+  return <Navigate to={taskId ? `/inbox/${taskId}` : '/inbox'} replace />;
+}
+
 const routes: RouteObject[] = [
   { path: '/', element: <RootRedirect /> },
   {
@@ -34,7 +39,8 @@ const routes: RouteObject[] = [
   { path: '/email-sent', element: <EmailSent /> },
   { path: '/public/task/:taskId', element: <PublicTaskPage /> },
   { path: '/boards', element: protectedBoardsRoute(<BoardsPage />) },
-  { path: '/boards/inbox', element: protectedBoardsRoute(<BoardsInboxPage />) },
+  { path: '/inbox/:taskId?', element: protectedBoardsRoute(<BoardsInboxPage />) },
+  { path: '/boards/inbox/:taskId?', element: <BoardsInboxLegacyRedirect /> },
   { path: '/boards/profile', element: protectedBoardsRoute(<BoardsProfilePage />) },
   { path: '/boards/no-access', element: protectedBoardsRoute(<BoardNoAccessPage />) },
   {
