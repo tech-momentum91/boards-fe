@@ -14,6 +14,7 @@ import { logoutSuccess } from '../redux/authSlice';
 import { getProfile } from '../redux/profileSlice';
 import { socketService } from '../services/socket-service';
 import { clearCsrfToken, fetchCsrfToken } from '../services/csrf-service';
+import { clearBoardPushSubscription } from '../services/board-push';
 import type { AppDispatch } from '../redux/store';
 
 export interface AuthUser {
@@ -28,7 +29,7 @@ export interface AuthContextValue {
   isAuthenticated: boolean;
   loading: boolean;
   login: (userData: unknown, email?: string) => void;
-  logout: () => void;
+  logout: () => void | Promise<void>;
   refreshSession: () => void;
   sessionApiSucceeded: boolean;
   sessionApiError: boolean;
@@ -134,7 +135,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   }, []);
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    // Drop push while cookies/CSRF may still work; browser unsubscribe
+    // still runs if the server call fails (e.g. session already gone).
+    try {
+      await clearBoardPushSubscription();
+    } catch {
+      /* ignore */
+    }
     setUser(null);
     setIsAuthenticated(false);
     setSessionApiSucceeded(false);
@@ -199,7 +207,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         // Important: Do NOT fallback to localStorage when server explicitly says no session
         // This ensures security - if server session expired, user must re-authenticate
         // console.log('No valid server session, logging out user');
-        logout();
+        await logout();
       } catch {
         // console.error('Session check failed with unexpected error:', error);
 
@@ -213,7 +221,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         // Note: sessionApiSucceeded remains false, so centers won't be fetched
         const synced = syncUserFromStorage();
         if (!synced) {
-          logout();
+          await logout();
         }
       } finally {
         setLoading(false);

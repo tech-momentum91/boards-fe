@@ -19,6 +19,7 @@ import { useAuth } from '@/contexts/auth-context';
 import logo from '@/assets/svgs/Layer.svg';
 import { logoutSuccess } from '@/redux/authSlice';
 import { logOutService } from '@/services/auth-service';
+import { clearBoardPushSubscription } from '@/services/board-push';
 import SidebarUserProfile from './SidebarUserProfile';
 import {
   DndContext,
@@ -713,13 +714,21 @@ const Sidebar = ({
   }, [authUser, profileData]);
 
   const handleLogout = useCallback(async () => {
+    // Clear push before ending the Frappe session so unsubscribe_push
+    // can delete the Board Push Subscription row for this browser.
+    try {
+      await clearBoardPushSubscription();
+    } catch {
+      // Browser unsubscribe may still have succeeded inside the helper.
+    }
+
     try {
       await logOutService();
     } catch {
       // Always clear local session even if the logout API fails.
     }
 
-    authLogout();
+    await authLogout();
     dispatch(logoutSuccess());
     navigate('/login');
   }, [authLogout, dispatch, navigate]);

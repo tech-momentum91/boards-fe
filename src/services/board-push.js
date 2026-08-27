@@ -5,6 +5,7 @@
 import {
   getBoardPushPublicKey,
   subscribeBoardPush,
+  unsubscribeBoardPush,
 } from '@/services/inbox-service';
 import { registerBoardServiceWorker } from '@/services/board-pwa';
 
@@ -74,4 +75,45 @@ export async function ensureBoardPushSubscription() {
   const save = await subscribeBoardPush({ endpoint, p256dh, auth });
   if (save.error) return { error: save.error };
   return { success: true };
+}
+
+/**
+ * Drop the browser PushManager subscription and remove it from the server.
+ * Call this while the session is still valid (before /method/logout) so the
+ * server row can be deleted; browser unsubscribe still runs if the API fails.
+ */
+export async function clearBoardPushSubscription() {
+  if (typeof window === 'undefined') return { skipped: true };
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+    return { skipped: true, reason: 'unsupported' };
+  }
+
+  try {
+    const registration =
+      (await navigator.serviceWorker.getRegistration('/')) ||
+      (await navigator.serviceWorker.getRegistration());
+    if (!registration) {
+      return { skipped: true, reason: 'no_registration' };
+    }
+
+    const subscription = await registration.pushManager.getSubscription();
+    if (!subscription) {
+      return { skipped: true, reason: 'no_subscription' };
+    }
+
+    const endpoint = subscription.endpoint;
+    let serverError = null;
+    if (endpoint) {
+      const result = await unsubscribeBoardPush(endpoint);
+      if (result?.error) {
+        serverError = result.error;
+      }
+    }
+
+    await subscription.unsubscribe();
+    return serverError ? { success: true, serverError } : { success: true };
+  } catch (err) {
+    console.error('Failed to clear board push subscription:', err);
+    return { error: err?.message || 'Failed to clear push subscription' };
+  }
 }
