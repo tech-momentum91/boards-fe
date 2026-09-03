@@ -79,16 +79,120 @@ const isValidInternalRedirectPath = (path) => {
   return !isPublicRoutePath(path);
 };
 
+/** Build pathname+search+hash from a React Router location (or similar). */
+export function pathFromLocationLike(locationLike) {
+  if (!locationLike) return null;
+  if (typeof locationLike === 'string') return locationLike;
+  const pathname = locationLike.pathname;
+  if (typeof pathname !== 'string' || !pathname) return null;
+  return `${pathname}${locationLike.search || ''}${locationLike.hash || ''}`;
+}
+
+/**
+ * Remember where to send the user after a successful login.
+ * Ignores public routes and non-internal paths.
+ */
+export function setPostLoginRedirectPath(path) {
+  if (!isValidInternalRedirectPath(path)) return false;
+  try {
+    sessionStorage.setItem(POST_LOGIN_REDIRECT_KEY, path);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Read remembered path without clearing it. */
+export function peekPostLoginRedirectPath() {
+  try {
+    const redirectPath = sessionStorage.getItem(POST_LOGIN_REDIRECT_KEY);
+    if (isValidInternalRedirectPath(redirectPath)) return redirectPath;
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
+/**
+ * Resolve the post-login destination from (in order):
+ * 1. `?next=` query on the login URL
+ * 2. sessionStorage
+ * 3. React Router `location.state.from`
+ */
+export function resolvePostLoginRedirectPath({
+  search = typeof window !== 'undefined' ? window.location.search : '',
+  stateFrom = null,
+} = {}) {
+  try {
+    const params = new URLSearchParams(
+      typeof search === 'string' ? search : search?.toString?.() || '',
+    );
+    const nextParam = params.get('next');
+    if (nextParam) {
+      let decoded = nextParam;
+      try {
+        decoded = decodeURIComponent(nextParam);
+      } catch {
+        decoded = nextParam;
+      }
+      if (isValidInternalRedirectPath(decoded)) return decoded;
+    }
+  } catch {
+    // ignore
+  }
+
+  const stored = peekPostLoginRedirectPath();
+  if (stored) return stored;
+
+  const fromState = pathFromLocationLike(stateFrom);
+  if (isValidInternalRedirectPath(fromState)) return fromState;
+
+  return null;
+}
+
+/** Login path that embeds the return URL as `?next=`. */
+export function getLoginPathWithNext(
+  returnPath,
+  pathname = typeof window !== 'undefined' ? window.location.pathname : '',
+) {
+  const loginPath = getLoginPath(pathname);
+  if (!isValidInternalRedirectPath(returnPath)) return loginPath;
+  const separator = loginPath.includes('?') ? '&' : '?';
+  return `${loginPath}${separator}next=${encodeURIComponent(returnPath)}`;
+}
+
 /**
  * Clears all authentication data from localStorage
+ * Preserves post-login redirect + session-expired toast flags in sessionStorage
+ * so a mid-redirect clearAuthData() does not wipe the return URL.
  */
 export const clearAuthData = () => {
   localStorage.removeItem('email');
   localStorage.removeItem('user');
   localStorage.removeItem('authToken');
   // Tenant identity lives in the URL (/t/{slug}/…), not storage.
-  sessionStorage.clear();
+
+  let redirectPath = null;
+  let sessionExpired = null;
+  try {
+    redirectPath = sessionStorage.getItem(POST_LOGIN_REDIRECT_KEY);
+    sessionExpired = sessionStorage.getItem(SESSION_EXPIRED_TOAST_KEY);
+    sessionStorage.clear();
+    if (redirectPath) sessionStorage.setItem(POST_LOGIN_REDIRECT_KEY, redirectPath);
+    if (sessionExpired) sessionStorage.setItem(SESSION_EXPIRED_TOAST_KEY, sessionExpired);
+  } catch {
+    // sessionStorage may be unavailable (private mode / blocked)
+  }
 };
+
+/** Drop any remembered return URL (e.g. intentional logout). */
+export function clearPostLoginRedirectPath() {
+  try {
+    sessionStorage.removeItem(POST_LOGIN_REDIRECT_KEY);
+  } catch {
+    // ignore
+  }
+}
 
 /**
  * Redirects user to login page
@@ -101,12 +205,10 @@ export const redirectToLogin = () => {
     return;
   }
   const fullCurrentPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
-  if (isValidInternalRedirectPath(fullCurrentPath)) {
-    sessionStorage.setItem(POST_LOGIN_REDIRECT_KEY, fullCurrentPath);
-  }
+  setPostLoginRedirectPath(fullCurrentPath);
   sessionStorage.setItem(SESSION_EXPIRED_TOAST_KEY, '1');
   // Full reload to reset state. Path must already include /t/{slug} when tenant-scoped.
-  window.location.href = getLoginPath(currentPath);
+  window.location.href = getLoginPathWithNext(fullCurrentPath, currentPath);
 };
 
 /**
@@ -124,13 +226,15 @@ export const redirectToMaintenance = () => {
 
 /**
  * Returns and clears post-login redirect path if valid.
+ * Prefer {@link resolvePostLoginRedirectPath} + {@link clearPostLoginRedirectPath}
+ * when navigating after login so remounts cannot wipe the destination.
+ * @param {object|string|null} [fallbackLocation] React Router `location.state.from` or path string
  * @returns {string|null}
  */
-export const popPostLoginRedirectPath = () => {
-  const redirectPath = sessionStorage.getItem(POST_LOGIN_REDIRECT_KEY);
-  sessionStorage.removeItem(POST_LOGIN_REDIRECT_KEY);
-  if (!isValidInternalRedirectPath(redirectPath)) return null;
-  return redirectPath;
+export const popPostLoginRedirectPath = (fallbackLocation = null) => {
+  const resolved = resolvePostLoginRedirectPath({ stateFrom: fallbackLocation });
+  clearPostLoginRedirectPath();
+  return resolved;
 };
 
 /**

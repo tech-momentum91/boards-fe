@@ -1,9 +1,15 @@
-import { useEffect, type ComponentProps, type ReactNode } from 'react';
+import { useEffect, useRef, type ComponentProps, type ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/auth-context';
 import * as Button from '@/components/ui/button';
 import { RiAlertFill } from 'react-icons/ri';
-import { popPostLoginRedirectPath } from '@/utils/auth-utils';
+import {
+  clearPostLoginRedirectPath,
+  getLoginPathWithNext,
+  pathFromLocationLike,
+  resolvePostLoginRedirectPath,
+  setPostLoginRedirectPath,
+} from '@/utils/auth-utils';
 
 type ButtonRootProps = ComponentProps<'button'> & {
   variant?: string;
@@ -20,8 +26,9 @@ const ButtonRoot = Button.Root as unknown as (props: ButtonRootProps) => ReactNo
  * - Checks session on mount and reload (handled by AuthContext)
  * - Shows loading state while verifying authentication
  * - Redirects to /login if auth required but user not authenticated
+ * - Remembers the attempted URL (`?next=` + sessionStorage) so login returns there
  * - Shows error message if session API fails on protected pages
- * - Redirects to /dashboard if user authenticated but trying to access login
+ * - Redirects authenticated users away from the login page to the return URL (or /boards)
  */
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -31,33 +38,34 @@ interface ProtectedRouteProps {
 const ProtectedRoute = ({ children, requireAuth = true }: ProtectedRouteProps) => {
   const { isAuthenticated, loading: authLoading, sessionApiError, refreshSession } = useAuth();
   const location = useLocation();
+  // Capture the post-login destination once — pop/clear must not run on every render
+  // (authLogin + loginSuccess cause multiple re-renders / Strict Mode double-invoke).
+  const postLoginRedirectRef = useRef<string | null | undefined>(undefined);
 
-  // Trigger session check when component mounts (only for routes that use ProtectedRoute)
-  // Only check if we haven't checked yet to avoid unnecessary API calls
   useEffect(() => {
-    // Only trigger check if we haven't checked yet
-    // sessionApiSucceeded will be false if we haven't checked, or if the check failed
-    // We still want to check even if it failed (to retry), but not if it succeeded
-    // Actually, we should check on every protected route mount to ensure session is valid
-    // But checkAuth has a guard to prevent multiple simultaneous calls
     refreshSession();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Only run once per route mount
+  }, []);
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (requireAuth && !isAuthenticated) {
+      const fullPath = pathFromLocationLike(location);
+      if (fullPath) setPostLoginRedirectPath(fullPath);
+    }
+  }, [authLoading, requireAuth, isAuthenticated, location]);
 
   if (authLoading) {
     return (
       <div className='h-screen w-full flex items-center justify-center bg-(--color-bg-weak-50)'>
         <div className='flex flex-col items-center gap-4'>
           <div className='w-8 h-8 border-4 border-(--color-primary-base) border-t-transparent rounded-full animate-spin' />
-          <p className='text-(--color-text-sub-500)'>
-            Verifying session...
-          </p>
+          <p className='text-(--color-text-sub-500)'>Verifying session...</p>
         </div>
       </div>
     );
   }
 
-  // If session API failed on a protected page, show error message
   if (requireAuth && sessionApiError) {
     return (
       <div className='h-screen w-full flex items-center justify-center bg-(--color-bg-weak-50)'>
@@ -77,15 +85,28 @@ const ProtectedRoute = ({ children, requireAuth = true }: ProtectedRouteProps) =
     );
   }
 
-  // If route requires authentication and user is not authenticated
   if (requireAuth && !isAuthenticated) {
-    return <Navigate to='/login' state={{ from: location }} replace />;
+    const fullPath = pathFromLocationLike(location);
+    if (fullPath) setPostLoginRedirectPath(fullPath);
+    return (
+      <Navigate
+        to={getLoginPathWithNext(fullPath, location.pathname)}
+        state={{ from: location }}
+        replace
+      />
+    );
   }
 
-  // If route is login page and user is already authenticated
   if (!requireAuth && isAuthenticated) {
-    const redirectPath = popPostLoginRedirectPath();
-    return <Navigate to={redirectPath || '/boards'} replace />;
+    if (postLoginRedirectRef.current === undefined) {
+      postLoginRedirectRef.current =
+        resolvePostLoginRedirectPath({
+          search: location.search,
+          stateFrom: location.state?.from,
+        }) || '/boards';
+      clearPostLoginRedirectPath();
+    }
+    return <Navigate to={postLoginRedirectRef.current || '/boards'} replace />;
   }
 
   return <>{children}</>;

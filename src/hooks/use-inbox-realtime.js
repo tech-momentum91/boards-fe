@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useSocket } from '@/hooks/use-socket';
+import { maybePlayInboxSound } from '@/utils/notification-delivery-prefs';
 
 /** Keep in sync with inbox_realtime.py INBOX_EVENT / INBOX_CHANNEL_PREFIX. */
 const INBOX_EVENT = 'devx_inbox';
@@ -59,6 +60,11 @@ export function useInboxRealtime(userId, onInboxChanged, { enabled = true } = {}
       const self = normalizeUserId(userIdRef.current);
       if (eventUser && self && eventUser !== self) {
         return;
+      }
+      try {
+        maybePlayInboxSound(payload);
+      } catch {
+        // Autoplay / audio failures must never block inbox refresh.
       }
       scheduleRefresh();
     });

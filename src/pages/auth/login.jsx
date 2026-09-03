@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   RiErrorWarningFill,
@@ -23,7 +23,11 @@ import { loginService } from '@/services/auth-service';
 import { loginSuccess, setError, clearError } from '@/redux/authSlice';
 import { getProfile } from '@/redux/profileSlice';
 import { showErrorToast } from '@/utils/error-utils';
-import { SESSION_EXPIRED_TOAST_KEY } from '@/utils/auth-utils';
+import {
+  resolvePostLoginRedirectPath,
+  SESSION_EXPIRED_TOAST_KEY,
+  setPostLoginRedirectPath,
+} from '@/utils/auth-utils';
 
 const loginSchema = z.object({
   email: z
@@ -41,12 +45,22 @@ function Login() {
   const { error } = useSelector((state) => state.auth);
   const { login: authLogin } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [isLoading, setIsLoading] = useState(false);
 
   // Clear error when component mounts
   useEffect(() => {
     dispatch(clearError());
   }, [dispatch]);
+
+  // Keep return URL from `?next=` / ProtectedRoute `state.from` in sessionStorage.
+  useEffect(() => {
+    const resolved = resolvePostLoginRedirectPath({
+      search: location.search,
+      stateFrom: location.state?.from,
+    });
+    if (resolved) setPostLoginRedirectPath(resolved);
+  }, [location.search, location.state]);
 
   useEffect(() => {
     const shouldShowSessionExpiredToast = sessionStorage.getItem(SESSION_EXPIRED_TOAST_KEY) === '1';
@@ -103,6 +117,8 @@ function Login() {
         authLogin(userData?.data || userData, data.email);
         // Update Redux store
         dispatch(loginSuccess(userData?.data || userData));
+        // ProtectedRoute (requireAuth=false) sends the user to the remembered
+        // return URL — or /boards — once isAuthenticated flips true.
       }
     } catch {
       // console.log('error in login', error);

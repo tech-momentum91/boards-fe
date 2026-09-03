@@ -11,6 +11,9 @@ const EmailSent = lazy(() => import('@/pages/auth/email-sent'));
 const BoardsPage = lazy(() => import('@/pages/boards'));
 const BoardsInboxPage = lazy(() => import('@/pages/boards/inbox/BoardsInboxPage'));
 const BoardsProfilePage = lazy(() => import('@/pages/profile/BoardsProfilePage'));
+const BoardsNotificationSettingsPage = lazy(
+  () => import('@/pages/profile/BoardsNotificationSettingsPage'),
+);
 const BoardNoAccessPage = lazy(() => import('@/pages/boards/BoardNoAccessPage'));
 const PublicTaskPage = lazy(() => import('@/pages/public/public-task-page'));
 
@@ -42,6 +45,10 @@ const routes: RouteObject[] = [
   { path: '/inbox/:taskId?', element: protectedBoardsRoute(<BoardsInboxPage />) },
   { path: '/boards/inbox/:taskId?', element: <BoardsInboxLegacyRedirect /> },
   { path: '/boards/profile', element: protectedBoardsRoute(<BoardsProfilePage />) },
+  {
+    path: '/boards/notification-settings',
+    element: protectedBoardsRoute(<BoardsNotificationSettingsPage />),
+  },
   { path: '/boards/no-access', element: protectedBoardsRoute(<BoardNoAccessPage />) },
   {
     path: '/boards/space/:spaceId/list/:listId',

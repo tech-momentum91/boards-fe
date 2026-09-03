@@ -11,6 +11,11 @@ import {
 import { useAuth } from '@/contexts/auth-context';
 import { useInboxRealtime } from '@/hooks/use-inbox-realtime';
 import { getInboxUnreadCount } from '@/services/inbox-service';
+import {
+  getNotificationSettings,
+  pingDesktopPresence,
+} from '@/services/notification-settings-service';
+import { setCachedBrowserPlaySound } from '@/utils/notification-delivery-prefs';
 
 type RefreshOptions = {
   /** Always bump syncVersion so open inbox lists refetch. */
@@ -28,6 +33,7 @@ type InboxSyncContextValue = {
 const InboxSyncContext = createContext<InboxSyncContextValue | null>(null);
 
 const POLL_MS = 25_000;
+const PRESENCE_MS = 60_000;
 
 /**
  * Single place for inbox unread count + change signals.
@@ -77,14 +83,29 @@ export function InboxSyncProvider({ children }: { children: ReactNode }) {
     if (!isAuthenticated) {
       unreadCountRef.current = 0;
       setUnreadCount(0);
+      setCachedBrowserPlaySound(false);
       return undefined;
     }
 
     refresh({ force: true });
 
+    let cancelled = false;
+    void (async () => {
+      const result = await getNotificationSettings();
+      if (cancelled || result.error || !result.data) return;
+      setCachedBrowserPlaySound(Boolean(result.data.browser_play_sound));
+    })();
+
+    const pingPresence = () => {
+      if (document.visibilityState !== 'visible') return;
+      void pingDesktopPresence();
+    };
+    pingPresence();
+
     const onVisible = () => {
       if (document.visibilityState === 'visible') {
         refresh({ force: true });
+        pingPresence();
       }
     };
 
@@ -97,10 +118,14 @@ export function InboxSyncProvider({ children }: { children: ReactNode }) {
       }
     }, POLL_MS);
 
+    const presenceId = window.setInterval(pingPresence, PRESENCE_MS);
+
     return () => {
+      cancelled = true;
       document.removeEventListener('visibilitychange', onVisible);
       window.removeEventListener('focus', onVisible);
       window.clearInterval(pollId);
+      window.clearInterval(presenceId);
     };
   }, [isAuthenticated, refresh]);
 
