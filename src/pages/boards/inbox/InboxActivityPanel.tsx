@@ -262,7 +262,9 @@ export default function InboxActivityPanel({
   sidebarTree = [],
 }: InboxActivityPanelProps) {
   const { profileData } = useSelector((state) => state.profile);
-  const { searchMentions } = useMentionSearch();
+  const { searchMentions } = useMentionSearch({
+    listId: seedNotification?.list ?? null,
+  });
   const [items, setItems] = useState<InboxNotification[]>(
     seedNotification ? [seedNotification] : [],
   );

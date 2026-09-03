@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { format, startOfDay } from 'date-fns';
 import { useSearchParams } from 'react-router-dom';
 import { useSelector } from 'react-redux';
+import { BoardMemberScopeProvider } from '@/contexts/board-member-scope-context';
 import {
   RiAddLine,
   RiArrowDownSLine,
@@ -5530,6 +5531,11 @@ export default function BoardTaskView({
   );
 
   return (
+    <BoardMemberScopeProvider
+      listId={list?.id}
+      spaceId={list?.spaceId}
+      folderId={list?.parentFolderId}
+    >
     <div className='flex min-h-0 flex-1 flex-col overflow-hidden'>
       <ListToolbar
         search={searchQuery}
@@ -6290,5 +6296,6 @@ export default function BoardTaskView({
         canDelete={canDeleteTasks}
       />
     </div>
+    </BoardMemberScopeProvider>
   );
 }

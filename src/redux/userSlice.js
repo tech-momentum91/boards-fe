@@ -57,6 +57,11 @@ export const searchUsers = createAsyncThunk(
       names = [],
       updateSearchData = true,
       internal_only: internalOnly = false,
+      list_id: listId = null,
+      space_id: spaceId = null,
+      folder_id: folderId = null,
+      resource_type: resourceType = null,
+      resource_id: resourceId = null,
     },
     { rejectWithValue },
   ) => {
@@ -75,6 +80,25 @@ export const searchUsers = createAsyncThunk(
       if (internalOnly) {
         payload.internal_only = true;
       }
+
+      if (resourceType && resourceId) {
+        payload.resource_type = resourceType;
+        payload.resource_id = resourceId;
+      } else if (listId) {
+        payload.list_id = listId;
+      } else if (folderId) {
+        payload.folder_id = folderId;
+      } else if (spaceId) {
+        payload.space_id = spaceId;
+      }
+
+      const scopePayload = {
+        ...(payload.list_id ? { list_id: payload.list_id } : {}),
+        ...(payload.space_id ? { space_id: payload.space_id } : {}),
+        ...(payload.folder_id ? { folder_id: payload.folder_id } : {}),
+        ...(payload.resource_type ? { resource_type: payload.resource_type } : {}),
+        ...(payload.resource_id ? { resource_id: payload.resource_id } : {}),
+      };
 
       const response = await apiClient.post(SEARCH_USERS_ENDPOINT, payload);
       const unwrapped = unwrapSearchUsersMessage(response?.data?.message);
@@ -103,6 +127,7 @@ export const searchUsers = createAsyncThunk(
             names: missingValues,
             limit: missingValues.length,
             start: 0,
+            ...scopePayload,
           };
           if (internalOnly) {
             assignedPayload.internal_only = true;
@@ -139,9 +164,31 @@ export const searchUsers = createAsyncThunk(
 // Search users for mentions
 export const searchMentionUsers = createAsyncThunk(
   'user/searchMentionUsers',
-  async ({ keyword = '', page = 1, page_size = 50 } = {}, { rejectWithValue }) => {
+  async (
+    {
+      keyword = '',
+      page = 1,
+      page_size = 50,
+      list_id: listId = null,
+      space_id: spaceId = null,
+      folder_id: folderId = null,
+      resource_type: resourceType = null,
+      resource_id: resourceId = null,
+    } = {},
+    { rejectWithValue },
+  ) => {
     try {
       const payload = keyword ? { keyword, page, page_size } : { page, page_size };
+      if (resourceType && resourceId) {
+        payload.resource_type = resourceType;
+        payload.resource_id = resourceId;
+      } else if (listId) {
+        payload.list_id = listId;
+      } else if (folderId) {
+        payload.folder_id = folderId;
+      } else if (spaceId) {
+        payload.space_id = spaceId;
+      }
       const response = await apiClient.post(MENTION_USERS_ENDPOINT, payload);
 
       let data;

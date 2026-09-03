@@ -30,7 +30,9 @@ export default function BoardCommentsPanel({
   const [loading, setLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadError, setLoadError] = useState('');
-  const { searchMentions } = useMentionSearch();
+  const { searchMentions } = useMentionSearch({
+    listId: currentListId,
+  });
 
   const isControlled = Array.isArray(externalComments);
   const comments = isControlled ? externalComments : commentsData.comments;
