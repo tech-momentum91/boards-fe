@@ -1,9 +1,29 @@
-import { useCallback, useRef, useState, useEffect } from 'react';
+import { useCallback, useRef, useState, useEffect, useMemo } from 'react';
 import { useDispatch } from 'react-redux';
 import { searchMentionUsers } from '@/redux/userSlice';
+import {
+  boardMemberScopeToApiParams,
+  useBoardMemberScope,
+} from '@/contexts/board-member-scope-context';
 
-export const useMentionSearch = ({ debounceMs = 300, page_size = 50 } = {}) => {
+export const useMentionSearch = ({
+  debounceMs = 300,
+  page_size = 50,
+  listId = null,
+  spaceId = null,
+  folderId = null,
+} = {}) => {
   const dispatch = useDispatch();
+  const memberScope = useBoardMemberScope();
+  const scopeParams = useMemo(
+    () =>
+      boardMemberScopeToApiParams(memberScope, {
+        listId,
+        spaceId,
+        folderId,
+      }),
+    [memberScope, listId, spaceId, folderId],
+  );
   const timeoutRef = useRef(null);
   const requestIdRef = useRef(0);
   const currentPageRef = useRef(1);
@@ -34,10 +54,10 @@ export const useMentionSearch = ({ debounceMs = 300, page_size = 50 } = {}) => {
           keyword: currentQuery,
           page: nextPage,
           page_size,
+          ...scopeParams,
         }),
       );
       if (searchMentionUsers.fulfilled.match(result)) {
-         
         currentPageRef.current = result.payload.page;
         setAllUsers((prev) => [...prev, ...result.payload.users]);
         setHasMore(result.payload.hasMore);
@@ -45,7 +65,7 @@ export const useMentionSearch = ({ debounceMs = 300, page_size = 50 } = {}) => {
     } finally {
       setLoadingMore(false);
     }
-  }, [dispatch, currentQuery, page_size]);
+  }, [dispatch, currentQuery, page_size, scopeParams]);
 
   const searchMentions = useCallback(
     (query = '') =>
@@ -65,6 +85,7 @@ export const useMentionSearch = ({ debounceMs = 300, page_size = 50 } = {}) => {
               keyword: query,
               page: 1,
               page_size,
+              ...scopeParams,
             }),
           )
             .then((result) => {
@@ -73,7 +94,6 @@ export const useMentionSearch = ({ debounceMs = 300, page_size = 50 } = {}) => {
                 return;
               }
               if (searchMentionUsers.fulfilled.match(result)) {
-                 
                 currentPageRef.current = result.payload.page;
                 setAllUsers(result.payload.users || []);
                 setHasMore(result.payload.hasMore);
@@ -85,7 +105,7 @@ export const useMentionSearch = ({ debounceMs = 300, page_size = 50 } = {}) => {
             .catch(() => resolve([]));
         }, debounceMs);
       }),
-    [dispatch, debounceMs, page_size],
+    [dispatch, debounceMs, page_size, scopeParams],
   );
 
   return { searchMentions, users: allUsers, hasMore, loadingMore, loadMore };

@@ -10,6 +10,10 @@ import { useDebounce } from '@/hooks/use-debounce';
 import * as Button from '@/components/ui/button';
 import * as Tooltip from '@/components/ui/tooltip';
 import { getAssigneeDisplayName, getAssigneeFirstNameInitial } from '@/utils/task-utils';
+import {
+  boardMemberScopeToApiParams,
+  useBoardMemberScope,
+} from '@/contexts/board-member-scope-context';
 
 // Cache for user data to preserve names and images
 const userDataCache = new Map();
@@ -56,9 +60,9 @@ const CACHE_TTL = 2 * 60 * 1000; // 2 minutes in milliseconds
 const USER_PAGE_SIZE = 20;
 
 // Helper to get cache key for search
-const getSearchCacheKey = (searchQuery, names, internalOnly = false) => {
+const getSearchCacheKey = (searchQuery, names, internalOnly = false, scopeKey = '') => {
   const namesKey = names && names.length > 0 ? names.sort().join(',') : 'no-names';
-  return `${searchQuery || ''}::${namesKey}::${internalOnly ? 'internal' : 'all'}::page0`;
+  return `${searchQuery || ''}::${namesKey}::${internalOnly ? 'internal' : 'all'}::${scopeKey || 'site'}::page0`;
 };
 
 // Helper to check if cache entry is still valid
@@ -98,9 +102,36 @@ const AssigneeMultiSelect = ({
   optionsLoading = false,
   /** Render search + user list only (no trigger); parent provides the popover container */
   listOnly = false,
+  /** Board scope overrides (falls back to BoardMemberScopeProvider). */
+  listId = null,
+  spaceId = null,
+  folderId = null,
 }) => {
   const dispatch = useDispatch();
   const userSearch = useSelector(selectUserSearch);
+  const memberScope = useBoardMemberScope();
+  const scopeParams = useMemo(
+    () =>
+      boardMemberScopeToApiParams(memberScope, {
+        listId,
+        spaceId,
+        folderId,
+      }),
+    [memberScope, listId, spaceId, folderId],
+  );
+  const scopeCacheKey = useMemo(
+    () =>
+      [
+        scopeParams.list_id,
+        scopeParams.space_id,
+        scopeParams.folder_id,
+        scopeParams.resource_type,
+        scopeParams.resource_id,
+      ]
+        .filter(Boolean)
+        .join(':'),
+    [scopeParams],
+  );
 
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -300,6 +331,7 @@ const AssigneeMultiSelect = ({
           limit: selectedUserNames.length,
           updateSearchData: false, // Don't overwrite userSearch.data with assignees
           internal_only: internalOnly,
+          ...scopeParams,
         }),
       )
         .then((result) => {
@@ -334,6 +366,7 @@ const AssigneeMultiSelect = ({
     hasProvidedOptions,
     fixedAssigneeOptions,
     valueIds,
+    scopeParams,
   ]);
 
   // Fetch initial users when dropdown opens, or search when typing
@@ -350,7 +383,12 @@ const AssigneeMultiSelect = ({
       cleanOldCacheEntries();
 
       // Check cache first (first page only)
-      const cacheKey = getSearchCacheKey(debouncedSearchQuery, names, internalOnly);
+      const cacheKey = getSearchCacheKey(
+        debouncedSearchQuery,
+        names,
+        internalOnly,
+        scopeCacheKey,
+      );
       const cachedResult = searchResultsCache.get(cacheKey);
 
       if (isCacheValid(cachedResult)) {
@@ -380,6 +418,7 @@ const AssigneeMultiSelect = ({
           append: false,
           names: [],
           internal_only: internalOnly,
+          ...scopeParams,
         }),
       );
 
@@ -403,6 +442,8 @@ const AssigneeMultiSelect = ({
     internalOnly,
     hasProvidedOptions,
     fixedAssigneeOptions,
+    scopeParams,
+    scopeCacheKey,
   ]);
 
   const handleLoadMoreUsers = useCallback(() => {
@@ -424,6 +465,7 @@ const AssigneeMultiSelect = ({
         append: true,
         names: [],
         internal_only: internalOnly,
+        ...scopeParams,
       }),
     );
   }, [
@@ -434,6 +476,7 @@ const AssigneeMultiSelect = ({
     internalOnly,
     listOnly,
     open,
+    scopeParams,
     userSearch.data.length,
     userSearch.hasMore,
     userSearch.isLoadingMore,
