@@ -9,7 +9,7 @@ import {
 } from 'react';
 import { useDispatch } from 'react-redux';
 import { getUserByEmailID, getSession } from '../services/auth-service';
-import { clearAuthData } from '../utils/auth-utils';
+import { clearAuthData, clearPostLoginRedirectPath } from '../utils/auth-utils';
 import { logoutSuccess } from '../redux/authSlice';
 import { getProfile } from '../redux/profileSlice';
 import { socketService } from '../services/socket-service';
@@ -147,6 +147,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     setIsAuthenticated(false);
     setSessionApiSucceeded(false);
     setSessionApiError(false);
+    clearPostLoginRedirectPath();
     clearAuthData();
     clearCsrfToken();
     // Disconnect socket on logout

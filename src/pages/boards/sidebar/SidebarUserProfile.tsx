@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { RiArrowRightSLine, RiLogoutBoxLine, RiUserLine } from 'react-icons/ri';
+import { RiArrowRightSLine, RiLogoutBoxLine, RiNotification3Line, RiUserLine } from 'react-icons/ri';
 import * as Avatar from '@/components/ui/avatar';
 import * as Dropdown from '@/components/ui/dropdown';
 import { cn } from '@/utils/cn';
@@ -83,6 +83,10 @@ export default function SidebarUserProfile({ user, onLogout, className }: Sideba
             <Dropdown.Item onClick={() => navigate('/boards/profile')}>
               <Dropdown.ItemIcon as={RiUserLine} />
               Profile
+            </Dropdown.Item>
+            <Dropdown.Item onClick={() => navigate('/boards/notification-settings')}>
+              <Dropdown.ItemIcon as={RiNotification3Line} />
+              Notification settings
             </Dropdown.Item>
             <Dropdown.Item onClick={onLogout}>
               <Dropdown.ItemIcon as={RiLogoutBoxLine} />
