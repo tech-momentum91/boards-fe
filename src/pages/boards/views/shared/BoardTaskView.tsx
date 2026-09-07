@@ -2293,6 +2293,7 @@ export default function BoardTaskView({
   const useViewSettings = Boolean(settingsScopeId);
   const taskViewSettingsKey = useMemo(() => getTaskViewSettingsKey(taskView), [taskView]);
   const { user } = useAuth();
+  const userSearch = useSelector(selectUserSearch);
   const [searchParams, setSearchParams] = useSearchParams();
   const [tasks, setTasks] = useState([]);
   const [erpValuesByLink, setErpValuesByLink] = useState({});
@@ -4773,19 +4774,49 @@ export default function BoardTaskView({
         return;
       }
 
+      const patched = result.data ? normalizeListTask(result.data) : null;
+      const nextAssignees = patched?.assignees?.length ? patched.assignees : assigneeIds;
+      const nextDetails =
+        patched?.assigneeDetails?.length > 0
+          ? patched.assigneeDetails
+          : (assigneeIds ?? []).map((id) => {
+              const existing = (task?.assigneeDetails ?? []).find((entry) => {
+                if (!entry || typeof entry !== 'object') return false;
+                return [entry.user, entry.email, entry.value, entry.name].some(
+                  (value) => value != null && String(value) === String(id),
+                );
+              });
+              if (existing) return existing;
+              const fromSearch = (userSearch?.data ?? []).find(
+                (user) =>
+                  String(user.value) === String(id) ||
+                  String(user.email) === String(id) ||
+                  String(user.name) === String(id),
+              );
+              if (fromSearch) {
+                return {
+                  user: id,
+                  full_name: fromSearch.label || fromSearch.full_name || id,
+                  user_image: fromSearch.image || fromSearch.user_image || '',
+                };
+              }
+              return { user: id, full_name: id, user_image: '' };
+            });
+
       setTasks((previous) =>
         previous.map((item) =>
           item.id === taskId
             ? {
                 ...item,
-                assignees: assigneeIds,
-                assignee: assigneeIds[0] ?? '',
+                assignees: nextAssignees,
+                assignee: nextAssignees[0] ?? '',
+                assigneeDetails: nextDetails,
               }
             : item,
         ),
       );
     },
-    [tasks],
+    [tasks, userSearch?.data],
   );
 
   const handleSaveTaskDueDate = useCallback(
@@ -5085,9 +5116,39 @@ export default function BoardTaskView({
     (assigneeIds) =>
       runBulkUpdate(
         () => buildAssigneeUpdatePayload(assigneeIds),
-        (item) => ({ ...item, assignees: assigneeIds, assignee: assigneeIds[0] ?? '' }),
+        (item) => {
+          const nextDetails = (assigneeIds ?? []).map((id) => {
+            const existing = (item.assigneeDetails ?? []).find((entry) => {
+              if (!entry || typeof entry !== 'object') return false;
+              return [entry.user, entry.email, entry.value, entry.name].some(
+                (value) => value != null && String(value) === String(id),
+              );
+            });
+            if (existing) return existing;
+            const fromSearch = (userSearch?.data ?? []).find(
+              (user) =>
+                String(user.value) === String(id) ||
+                String(user.email) === String(id) ||
+                String(user.name) === String(id),
+            );
+            if (fromSearch) {
+              return {
+                user: id,
+                full_name: fromSearch.label || fromSearch.full_name || id,
+                user_image: fromSearch.image || fromSearch.user_image || '',
+              };
+            }
+            return { user: id, full_name: id, user_image: '' };
+          });
+          return {
+            ...item,
+            assignees: assigneeIds,
+            assignee: assigneeIds[0] ?? '',
+            assigneeDetails: nextDetails,
+          };
+        },
       ),
-    [runBulkUpdate],
+    [runBulkUpdate, userSearch?.data],
   );
 
   const handleBulkDueDate = useCallback(

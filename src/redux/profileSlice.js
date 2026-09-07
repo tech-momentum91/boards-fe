@@ -165,11 +165,10 @@ export const uploadProfileImageUser = createAsyncThunk(
       uploadFormData.append('fieldname', fieldName);
       uploadFormData.append('filename', filename);
       uploadFormData.append('file', file);
-      uploadFormData.append('is_private', '0');
+      uploadFormData.append('is_private', '1');
 
-      // Use the new API endpoint
       const response = await apiClient.post(
-        '/method/devx.api.core.upload_attachment',
+        '/method/devx_tasks.devx_tasks.apis.user_.upload_user_image',
         uploadFormData,
         {
           headers: {
@@ -188,9 +187,12 @@ export const deleteFileByUrl = createAsyncThunk(
   'profile/deleteFileByUrl',
   async (fileUrl, { rejectWithValue }) => {
     try {
-      const response = await apiClient.post('/method/devx.api.core.delete_file_by_url', {
-        file_url: fileUrl,
-      });
+      const response = await apiClient.post(
+        '/method/devx_tasks.devx_tasks.apis.user_.delete_user_image',
+        {
+          file_url: fileUrl,
+        },
+      );
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);
@@ -218,10 +220,19 @@ export const getProfile = createAsyncThunk(
   'profile/getProfile',
   async (email, { rejectWithValue }) => {
     try {
-      // Use relative path since apiClient already has baseURL with /api
-      const response = await apiClient.get(`/resource/User/${email}`, {
-        withCredentials: true,
-      });
+      const response = await apiClient.post(
+        '/method/devx_tasks.devx_tasks.apis.user_.get_profile',
+        { email },
+        { withCredentials: true },
+      );
+      // Match prior `/resource/User` shape: { data: { ... } }
+      const message = response.data?.message;
+      if (message?.data) {
+        return { data: message.data };
+      }
+      if (message && typeof message === 'object') {
+        return { data: message };
+      }
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);
@@ -945,8 +956,8 @@ const profileSlice = createSlice({
 
     builder.addCase(deleteFileByUrl.fulfilled, (state) => {
       state.profileData.isLoading = false;
-      // Don't clear profile_image here - let the components refresh the appropriate data
-      // This prevents clearing user profile_image when deleting company logo
+      state.profileData.profile_image = '';
+      state.profileData.profile_image_id = '';
     });
 
     builder.addCase(deleteFileByUrl.rejected, (state, action) => {

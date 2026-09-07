@@ -48,7 +48,16 @@ export async function logOutService() {
  */
 export async function getUserByEmailID(email) {
   try {
-    const { data } = await apiClient.get(`/resource/User/${email}`);
+    const { data } = await apiClient.post('/method/devx_tasks.devx_tasks.apis.user_.get_profile', {
+      email,
+    });
+    const message = data?.message;
+    if (message?.data) {
+      return { data: message.data };
+    }
+    if (message && typeof message === 'object') {
+      return { data: message };
+    }
     return data;
   } catch (error) {
     console.error('Get user service error', error);

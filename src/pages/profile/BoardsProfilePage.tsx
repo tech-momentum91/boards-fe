@@ -31,7 +31,8 @@ import {
   saveProfile,
   uploadProfileImageUser,
 } from '@/redux/profileSlice';
-import { extractErrorMessage, showSuccessToast } from '@/utils/error-utils';
+import { extractErrorMessage, showErrorToast, showSuccessToast } from '@/utils/error-utils';
+import { toAbsoluteAttachmentUrl } from '@/lib/utils';
 import { buildBoardsNavigationPath } from '@/pages/boards/utils/boards-navigation';
 import useBoardsSidebarCollapsed from '@/pages/boards/hooks/useBoardsSidebarCollapsed';
 import BoardsSidebarShell from '@/pages/boards/layout/BoardsSidebarShell';
@@ -215,7 +216,11 @@ export default function BoardsProfilePage() {
     return `${firstLetter}${lastLetter}`;
   }, [profileData?.full_name]);
 
-  const hasCustomImage = Boolean(profileData?.profile_image?.trim());
+  const profileImageUrl = useMemo(
+    () => toAbsoluteAttachmentUrl(profileData?.profile_image || ''),
+    [profileData?.profile_image],
+  );
+  const hasCustomImage = Boolean(profileImageUrl.trim());
 
   const onSubmit = (data: ProfileFormValues) => {
     const nameParts = data.fullName.trim().split(' ').filter(Boolean);
@@ -254,6 +259,7 @@ export default function BoardsProfilePage() {
     void dispatch(uploadProfileImageUser(formData) as never).then(
       (response: { error?: unknown; payload?: { message?: { file_url?: string } } }) => {
         if (response?.error) {
+          showErrorToast(response.error, { defaultMessage: 'Failed to update profile image.' });
           return;
         }
         const fileUrl = response.payload?.message?.file_url;
@@ -273,16 +279,11 @@ export default function BoardsProfilePage() {
     void dispatch(deleteFileByUrl(profileData.profile_image) as never).then(
       (response: { error?: unknown }) => {
         if (response?.error) {
+          showErrorToast(response.error, { defaultMessage: 'Failed to remove profile image.' });
           return;
         }
-        void dispatch(getProfile(profileData.email) as never).then(
-          (profileResponse: { error?: unknown; payload?: { data?: { user_image?: string } } }) => {
-            if (profileResponse?.error) {
-              return;
-            }
-            syncAuthProfile({ user_image: profileResponse.payload?.data?.user_image ?? '' });
-          },
-        );
+        syncAuthProfile({ user_image: '' });
+        void dispatch(getProfile(profileData.email) as never);
         showSuccessToast('Profile image removed.');
       },
     );
@@ -401,7 +402,7 @@ export default function BoardsProfilePage() {
                     <span className='flex size-full items-center justify-center overflow-hidden rounded-full bg-bg-weak-50 ring-1 ring-stroke-soft-200'>
                       {hasCustomImage ? (
                         <img
-                          src={profileData.profile_image}
+                          src={profileImageUrl}
                           alt={`${profileData.full_name ?? 'User'} profile`}
                           className='size-full object-cover'
                         />

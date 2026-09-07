@@ -1,5 +1,6 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import apiClient from '@/api/axios';
+import { toAbsoluteAttachmentUrl } from '@/lib/utils';
 
 const SEARCH_USERS_ENDPOINT = '/method/devx_tasks.devx_tasks.apis.user_.search_users';
 const MENTION_USERS_ENDPOINT = '/method/devx_tasks.devx_tasks.apis.user_.get_users_for_tagging';
@@ -7,6 +8,7 @@ const MENTION_USERS_ENDPOINT = '/method/devx_tasks.devx_tasks.apis.user_.get_use
 function formatUserOption(user) {
   const primaryRole =
     user.user_role || (Array.isArray(user.roles) && user.roles.length > 0 ? user.roles[0] : null);
+  const image = toAbsoluteAttachmentUrl(user.user_image || user.image || user.avatar || '');
 
   return {
     label: user.full_name || user.name || user.email || 'User',
@@ -14,8 +16,9 @@ function formatUserOption(user) {
     email: user.email,
     name: user.name,
     full_name: user.full_name,
-    image: user.user_image,
-    avatar: user.user_image,
+    image: image || null,
+    avatar: image || null,
+    user_image: image || null,
     user_role: primaryRole,
     roles: user.roles || (primaryRole ? [primaryRole] : []),
   };
