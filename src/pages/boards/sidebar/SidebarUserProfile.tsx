@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { RiArrowRightSLine, RiLogoutBoxLine, RiNotification3Line, RiUserLine } from 'react-icons/ri';
 import * as Avatar from '@/components/ui/avatar';
 import * as Dropdown from '@/components/ui/dropdown';
+import { toAbsoluteAttachmentUrl } from '@/lib/utils';
 import { cn } from '@/utils/cn';
 
 export type SidebarProfileUser = {
@@ -36,8 +37,11 @@ export default function SidebarUserProfile({ user, onLogout, className }: Sideba
   const fullName = user?.full_name || '';
   const email = user?.email || '';
   const firstName = fullName.trim().split(/\s+/).filter(Boolean)[0] || 'User';
-  const profileImage = user?.profile_image || user?.user_image;
-  const hasProfileImage = Boolean(profileImage?.trim());
+  const profileImage = useMemo(
+    () => toAbsoluteAttachmentUrl(user?.profile_image || user?.user_image || ''),
+    [user?.profile_image, user?.user_image],
+  );
+  const hasProfileImage = Boolean(profileImage.trim());
   const initials = useMemo(
     () => getProfileInitials(fullName || email),
     [email, fullName],

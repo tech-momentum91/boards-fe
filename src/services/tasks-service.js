@@ -241,11 +241,16 @@ export function buildFavoriteUpdatePayload(isFavorite = true) {
 }
 
 export function normalizeListTask(task = {}) {
-  const assigneeDetails = Array.isArray(task.assignee_details)
+  const rawDetails = Array.isArray(task.assignee_details)
     ? task.assignee_details
     : Array.isArray(task.assigneeDetails)
       ? task.assigneeDetails
-      : extractAssigneesRaw(task);
+      : [];
+  // Only keep rich objects — never treat bare assignee id strings as "details"
+  // (that leaves cells without user_image and shows initials forever).
+  const assigneeDetails = rawDetails.filter(
+    (entry) => entry && typeof entry === 'object' && !Array.isArray(entry),
+  );
   const assignees = extractAssigneeIds(task);
   const creation = task.creation ?? task.createdAt ?? task.created_at ?? '';
   const modified = task.modified ?? task.dateUpdated ?? task.updated_at ?? '';

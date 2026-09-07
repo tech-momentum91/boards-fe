@@ -1,5 +1,5 @@
 import React from 'react';
-import { cn } from '@/lib/utils';
+import { cn, toAbsoluteAttachmentUrl } from '@/lib/utils';
 
 /**
  * Avatar style configs: light bg + darker text + inset shadow (matches design spec).
@@ -105,10 +105,17 @@ export function CrmAccountAvatar({
   showNativeTitle = true,
 }) {
   const [imgError, setImgError] = React.useState(false);
+  const resolvedImage = React.useMemo(
+    () => (image ? toAbsoluteAttachmentUrl(String(image)) : ''),
+    [image],
+  );
+  React.useEffect(() => {
+    setImgError(false);
+  }, [resolvedImage]);
   const useWeak = variant === 'weak' || variant === 'salesOwner';
   const style = useWeak ? WEAK_STYLE : getAvatarStyle(typeof index === 'number' ? index : name);
   const initials = initialsProperty ?? getInitials(name);
-  const showImage = image && !imgError;
+  const showImage = Boolean(resolvedImage) && !imgError;
 
   return (
     <div
@@ -126,7 +133,7 @@ export function CrmAccountAvatar({
     >
       {showImage ? (
         <img
-          src={image}
+          src={resolvedImage}
           alt={name || ''}
           className='size-full object-cover'
           onError={() => setImgError(true)}

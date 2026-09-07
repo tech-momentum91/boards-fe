@@ -12,6 +12,7 @@ import {
 } from 'react-icons/ri';
 import * as Avatar from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/auth-context';
+import { toAbsoluteAttachmentUrl } from '@/lib/utils';
 import { cn } from '@/utils/cn';
 import CreateTaskMenu from './CreateTaskMenu';
 import ListFilterMenu from './ListFilterMenu';
@@ -50,8 +51,8 @@ function getProfileInitials(fullName = '') {
 }
 
 function UserAvatarButton({ user, active = false, onClick, onClear }) {
-  const profileImage = user?.user_image || user?.profile_image;
-  const hasProfileImage = Boolean(profileImage?.trim?.());
+  const profileImage = toAbsoluteAttachmentUrl(user?.user_image || user?.profile_image || '');
+  const hasProfileImage = Boolean(profileImage.trim());
   const initials = useMemo(
     () => getProfileInitials(user?.full_name || user?.email || ''),
     [user?.email, user?.full_name],
